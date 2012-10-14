@@ -34,3 +34,11 @@
 ;(last-pair squares)
 ;(last-pair odds)
 
+; 2.18
+
+(define (reverse items)
+  (if (null? (cdr items))
+    items
+    (append (reverse (cdr items)) (list(car items)))))
+
+;(reverse squares)
