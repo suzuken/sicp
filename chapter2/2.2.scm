@@ -12,6 +12,12 @@
 
 (define odds (list 1 3 5 7))
 
+; goshでsquareが使えないのでここで定義
+(define (square x)
+  (* x x))
+
+(print (square 3))
+
 ; (define (length items)
 ;   (define (length-iter a count)
 ;     (if (null? a)
@@ -27,24 +33,30 @@
 ; (append odds squares)
 
 ; 2.17
+; TODO: lastがnilかどうかで判断する
 
 (define (last-pair items)
-  (list-ref items (- (length items) 1)))
+  (list(list-ref items (- (length items) 1))))
 
-;(last-pair squares)
+;(print squares)
+;(print (last-pair squares))
 ;(last-pair odds)
 
 ; 2.18
+; TODO: 計算量減らそう
+; 線形反復プロセスで書こう
 
 (define (reverse items)
   (if (null? (cdr items))
     items
     (append (reverse (cdr items)) (list(car items)))))
 
-;(reverse squares)
+;(print (reverse squares))
 
 ; 2.19
+; 計算量はやはり異なるっぽい
 
+; 1.2.2
 ;(define (count-change amount)
 ;  (cc amount 5))
 ;
@@ -78,6 +90,7 @@
   (car coin-values))
 
 (define (cc amount coin-values)
+  (print "hoge")
   (cond ((= amount 0) 1)
         ((or (< amount 0) (no-more? coin-values)) 0)
         (else
@@ -87,16 +100,20 @@
                      (first-denomination coin-values))
                   coin-values)))))
 
-;(first-denomination us-coins)
-;(first-denomination uk-coins)
-;(except-first-denomination us-coins)
+; (print (first-denomination us-coins))
+; (print (first-denomination uk-coins))
+; (print (except-first-denomination us-coins))
 
-;(cc 100 us-coins)
+
+;(print (cc 100 us-coins))
 ;(cc 100 uk-coins)
 
-(define sample-coins (list 1 5 10 25 50))
+;(define sample-coins (list 1 5 10 250 500))
+;(define sample-coins (list 1 5 10 250 500))
+;(define us-coins (list 50 25 10 5 1))
 
-;(cc 100 sample-coins)
+;(print (cc 100000 (reverse sample-coins)))
+;(print (cc 500 (reverse us-coins)))
 
 
 ; 2.20
@@ -107,12 +124,12 @@
       results
       (iter (cdr items)
             (if (= (remainder (car items) 2)
-              (remainder x 2))
+                   (remainder x 2))
               (append results (list (car items)))
-            results))))
+              results))))
   (iter z (list x)))
 
-; (same-parity 1 2 3 4 5 6 7)
+;(print (same-parity 1 2 3 4 5 6 7))
 
 ; list mapping
 (define nil '())
@@ -144,25 +161,24 @@
 (define (square-list items)
   (if (null? items)
     nil
-    (cons (* (car items) (car items))
+    (cons (square (car items))
           (square-list (cdr items)))))
 
-; (define (square-list items)
-;   (map (lambda (x) (* x x))
-;        items))
+(define (square-list items)
+  (map square items))
 
-; (square-list (list 1 2 3 4))
+(print (square-list (list 1 2 3 4)))
 
 ; 2.22
 
-; (define (square-list items)
-;   (define (iter things answer)
-;     (if (null? things)
-;       answer
-;       (iter (cdr things)
-;             (cons (square (car things))
-;                   answer))))
-;   (iter items nil))
+(define (square-list items)
+  (define (iter things answer)
+    (if (null? things)
+      answer
+      (iter (cdr things)
+            (cons (square (car things))
+                  answer))))
+  (iter items nil))
 
 ; consでanswerの先頭に導き出した結果を対にしているため
 
@@ -178,7 +194,9 @@
   (iter items nil))
 
 ; (square-list (list 1 2 3 4))
+;
 ;;Value 14: ((((() . 1) . 4) . 9) . 16)
+;;
 ; consの後ろはlistにならなければならない。
 ; 書きなおすとしたら以下のようにする。
 
@@ -197,10 +215,10 @@
 ; 2.23
 
 (define (for-each proc items)
-  (cond ((null? items) nil)
+  (cond ((null? items) #t)
         (else
           (proc (car items))
           (for-each proc (cdr items)))))
 
-; (for-each (lambda (x) (newline) (display x))
-;           (list 57 321 88))
+(for-each (lambda (x) (newline) (display x))
+          (list 57 321 88))
