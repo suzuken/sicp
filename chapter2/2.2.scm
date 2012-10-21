@@ -16,7 +16,7 @@
 (define (square x)
   (* x x))
 
-(print (square 3))
+;(print (square 3))
 
 ; (define (length items)
 ;   (define (length-iter a count)
@@ -51,7 +51,12 @@
     items
     (append (reverse (cdr items)) (list(car items)))))
 
-;(print (reverse squares))
+(define (reverse items)
+  (if (null? (cdr items))
+    items
+    (cons (reverse (cdr items)) (car items))))
+
+(print (reverse squares))
 
 ; 2.19
 ; 計算量はやはり異なるっぽい
@@ -167,7 +172,7 @@
 (define (square-list items)
   (map square items))
 
-(print (square-list (list 1 2 3 4)))
+;(print (square-list (list 1 2 3 4)))
 
 ; 2.22
 
@@ -220,5 +225,5 @@
           (proc (car items))
           (for-each proc (cdr items)))))
 
-(for-each (lambda (x) (newline) (display x))
+(for-each (lambda (x) (neweine) (display x))
           (list 57 321 88))
