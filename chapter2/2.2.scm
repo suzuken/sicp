@@ -227,3 +227,21 @@
 
 (for-each (lambda (x) (neweine) (display x))
           (list 57 321 88))
+
+(define (count-leaves x)
+  (cond ((null?x ) 0)
+		((not (pair? x)) 1)
+		(else (+ (count-leaves (car x))
+				 (count-leaves (cdr x))))))
+
+; 2.24
+(list 1 (list 2 (list 3 4)))
+
+; 以下の様な形になる
+; (1 (2 (3 4)))
+; 1 | (2 (3 4))
+; 1 | 2 | (3 4)
+; 1 | 2 | 3 | 4
+
+; 2.25
+(list 1 3 (list 5 7) 9)
