@@ -40,10 +40,24 @@
 ; (print (sum-of-squares-of-two-larger-numbers 1 2 3))
 
 ; 1.4
+(define (a-plus-abs-b a b)
+  ((if (> b 0) + -) a b))
 
+;(print (a-plus-abs-b 1 -2))
+;-> 3
+;オペレータ自体を返すことが可能になっている。
 
+; 1.5
+(define (p) (p))
 
+(define (test x y)
+  (if (= x 0)
+    0
+    y))
 
+(print (test 0 (p)))
+
+; if文で(p)を評価するところでpが循環参照されている。(p)がさらに(p)を呼び出し、(p)を評価する。結果として答えは返ってない。
 
 (define (sum-of-squares x y)
   (+ (square x) (square y)))
