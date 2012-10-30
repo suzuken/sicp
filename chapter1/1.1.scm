@@ -55,7 +55,7 @@
     0
     y))
 
-(print (test 0 (p)))
+;(print (test 0 (p)))
 
 ; if文で(p)を評価するところでpが循環参照されている。(p)がさらに(p)を呼び出し、(p)を評価する。結果として答えは返ってない。
 
@@ -164,3 +164,60 @@
 ;               (+ 4 1)
 ;               3))
 ;6
+
+; 1.1.7
+; (define (sqrt x)
+;   (the y (and (>= y 0)
+; 			  (= (square y) x ))))
+
+; (define (sqrt-iter guess x)
+;   (if (good-enough? guess x)
+; 	guess
+; 	(sqrt-iter (improve guess x)
+; 			   x)))
+
+(define (improve guess x)
+  (average guess (/ x guess)))
+
+(define (average x y)
+		(/ (+ x y) 2))
+
+(define (good-enough? guess x)
+  (< (abs (- (square guess) x)) 0.001))
+
+(define (sqrt x)
+  (sqrt-iter 1.0 x))
+
+; (print (sqrt 9))
+; (print (sqrt (+ 100 37)))
+; (print (sqrt (+ (sqrt 2) (sqrt 3))))
+; (print (square (sqrt 1000)))
+
+; 1.6
+
+(define (new-if predicate then-clause else-clause)
+  (cond (predicate then-clause)
+		(else else-clause)))
+
+; (print (new-if (= 2 3) 0 5))
+; (print (new-if (= 1 1) 0 5))
+
+; what happen?
+(define (sqrt-iter guess x)
+  (new-if (good-enough? guess x)
+		  guess
+		  (sqrt-iter (improve guess x)
+					 x)))
+
+; cannot compute
+; (print (sqrt 9))
+; (print (sqrt (+ 100 37)))
+; (print (sqrt (+ (sqrt 2) (sqrt 3))))
+; (print (square (sqrt 1000)))
+
+; ifだとgood-enough?が実行されるが、new-ifの場合にはgood-enough?は評価されない。
+; そのため、improveされずに結局guessの値は一定になってしまう。
+
+; 1.7
+(define (new-good-enough? guess x)
+  (< (abs (- (square guess) x)) 0.001))
