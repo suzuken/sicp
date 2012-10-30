@@ -56,7 +56,7 @@
     items
     (cons (reverse (cdr items)) (car items))))
 
-(print (reverse squares))
+; (print (reverse squares))
 
 ; 2.19
 ; 計算量はやはり異なるっぽい
@@ -214,7 +214,7 @@
                   (list (square (car things)))))))
   (iter items nil))
 
-(square-list (list 1 2 3 4))
+;(square-list (list 1 2 3 4))
 ;Value 17: (1 4 9 16)
 
 ; 2.23
@@ -225,17 +225,17 @@
           (proc (car items))
           (for-each proc (cdr items)))))
 
-(for-each (lambda (x) (neweine) (display x))
-          (list 57 321 88))
+;(for-each (lambda (x) (newline) (display x))
+;         (list 57 321 88))
 
 (define (count-leaves x)
-  (cond ((null?x ) 0)
+  (cond ((null? x) 0)
 		((not (pair? x)) 1)
 		(else (+ (count-leaves (car x))
 				 (count-leaves (cdr x))))))
 
 ; 2.24
-(list 1 (list 2 (list 3 4)))
+; (list 1 (list 2 (list 3 4)))
 
 ; 以下の様な形になる
 ; (1 (2 (3 4)))
@@ -244,4 +244,18 @@
 ; 1 | 2 | 3 | 4
 
 ; 2.25
-(list 1 3 (list 5 7) 9)
+(print (car (cdr (car (cdr (cdr (list 1 3 (list 5 7) 9)))))))
+
+;(print (car (car ((7)))))
+
+; 2.27
+;(print reverse)
+(define (deep-reverse src-items)
+  (if (list? src-items)
+	(reverse (map deep-reverse src-items))
+	src-items))
+
+(print (deep-reverse (list 1 3 (list 5 7) 9)))
+(print (deep-reverse (list 1 (list 5 7) 9)))
+(print (deep-reverse (list (cons 1 2) (cons 3 4))))
+(print (count-leaves (list (cons 1 2) (cons 3 4))))
