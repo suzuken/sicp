@@ -337,7 +337,9 @@
               0
               coefficient-sequence))
 
-(print (horner-eval 2 (list 1 3 0 5 0 1)))
+; (print (horner-eval 2 (list 1 3 0 5 0 1)))
+; ->79
+;
 ; (x=2) 1 + 3x + 5x^3 + x^5
 ; 1 + x * ( high )
 ; 1 + x * ( 3 + x * ( high ))
@@ -345,3 +347,24 @@
 ; 1 + x * ( 3 + x * ( 0 + x * ( 5 + x * ( high ))))
 ; 1 + x * ( 3 + x * ( 0 + x * ( 5 + x * ( 0 + x * ( high )))))
 ; 1 + x * ( 3 + x * ( 0 + x * ( 5 + x * ( 0 + x * ( 1  + x * (0))))))
+
+; 2.35
+;
+; (define (count-leaves x)
+;   (cond ((null? x) 0)
+;         ((not (pair? x)) 1)
+;         (else (+ (count-leaves (car x))
+;                  (count-leaves (cdr x))))))
+
+; 穴埋め
+(define (enumerate-tree tree)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (list tree))
+        (else (append (enumerate-tree (car tree))
+                      (enumerate-tree (cdr tree))))))
+
+(define (count-leaves-acc t)
+  (accumulate + 0 (map (lambda (x) 1) (enumerate-tree t))))
+
+; (print (count-leaves-acc (list 1 2 3 4 5)))
+; -> 5
