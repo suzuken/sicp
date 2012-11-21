@@ -377,11 +377,29 @@
     (cons (accumulate op init (map car seqs))
           (accumulate-n op init (map cdr seqs)))))
 
-(print (accumulate-n + 0 (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12))))
+; (print (accumulate-n + 0 (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12))))
 ; -> (22 26 30)
 
 ; (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)) から (list 1 4 7 10)をどうつくるか
 ; それぞれ先頭の要素をcarで取り出せれば良い
 ;
 ; (map (lambda (x) (car x)) seqs) -> (map car seqs)
+
+; 2.37
+
+; 内積
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+(define (matrix-*-vector m v)
+  (map (lambda (row) (dot-product row v)) m))
+
+(define (transpose mat)
+  (accumulate-n cons nil mat))
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (row) (matrix-*-vector cols row)) m)))
+
+; 2.38
 
