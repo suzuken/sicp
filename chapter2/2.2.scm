@@ -12,7 +12,6 @@
 
 (define odds (list 1 3 5 7))
 
-; goshでsquareが使えないのでここで定義
 (define (square x)
   (* x x))
 
@@ -147,12 +146,12 @@
 
 ;(scale-list (list 1 2 3 4 5) 10)
 
-(define (map proc items)
-  (if (null? items)
-    nil
-    (cons (proc (car items))
-          (map proc (cdr items)))))
-
+; (define (map proc items)
+;   (if (null? items)
+;     nil
+;     (cons (proc (car items))
+;           (map proc (cdr items)))))
+;
 ;(map abs (list -10 2.5 -11.6 17))
 
 ;(map (lambda (x) (* x x))
@@ -386,10 +385,14 @@
 ; (map (lambda (x) (car x)) seqs) -> (map car seqs)
 
 ; 2.37
+(define mat (list (list 1 2) (list 3 4)))
+(define vec (list 1 1))
 
 ; 内積
 (define (dot-product v w)
   (accumulate + 0 (map * v w)))
+
+; (print (dot-product vec vec))
 
 (define (matrix-*-vector m v)
   (map (lambda (row) (dot-product row v)) m))
@@ -403,3 +406,119 @@
 
 ; 2.38
 
+
+; p.71
+
+; (accumulate append
+;             nil
+;             (map (lambda (i)
+;                    (map (lambda (j) (list i j))
+;                         (enumerate-interval i (- i 1))))
+;                  (enumerate-interval 1 n)))
+
+(define (enumerate-interval low high)
+  (if (> low high)
+    nil
+    (cons low (enumerate-interval (+ low 1) high))))
+
+;(print (enumerate-interval 2 6))
+
+(accumulate append
+            nil
+            (map (lambda (i)
+                   (map (lambda (j) (list i j))
+                        (enumerate-interval 1 (- i 1))))
+                 (enumerate-interval 1 6)))
+
+; ちなみに置き換えると
+(accumulate append
+            nil
+            (map (lambda (i)
+                   (map (lambda (j) (list i j))
+                        (enumerate-interval 1 (- i 1))))
+                 (enumerate-interval 1 2)))
+
+(accumulate append
+            nil
+            (map (lambda (i)
+                   (map (lambda (j) (list i j))
+                        (enumerate-interval 1 (- i 1))))
+                 (list 1 2)))
+
+(accumulate append
+            nil
+            (list ((lambda (i)
+                   (map (lambda (j) (list i j))
+                        (enumerate-interval 1 (- i 1)))) 1)
+                  ((lambda (i)
+                   (map (lambda (j) (list i j))
+                        (enumerate-interval 1 (- i 1)))) 2)))
+
+(accumulate append
+            nil
+            (list
+              (map (lambda (j) (list 1 j))
+                   (enumerate-interval 1 (- 1 1)))
+              (map (lambda (j) (list 2 j))
+                   (enumerate-interval 1 (- 2 1)))
+              ))
+
+(accumulate append
+            nil
+            (list
+              (map (lambda (j) (list 1 j))
+                   (enumerate-interval 1 0))
+              (map (lambda (j) (list 2 j))
+                   (enumerate-interval 1 1))
+              ))
+
+(accumulate append
+            nil
+            (list
+              (map (lambda (j) (list 1 j))
+                   nil)
+              (map (lambda (j) (list 2 j))
+                   (list 1))
+              ))
+
+(accumulate append
+            nil
+            (list
+              nil
+              (list (list 2 1))
+              ))
+
+(accumulate append
+            nil
+            (list nil (list (list 2 1))))
+
+
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+; 素数か否か
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+; goshにはないので定義した
+(define (prime? n)
+  (let ((m (sqrt n)))
+    (let loop ((i 2))
+      (or (< m i)
+          (and (not (zero? (modulo n i)))
+               (loop (+ i (if (= i 2) 1 2))))))))
+
+(define (make-pair-sum pair)
+  (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum?
+               (flatmap
+                 (lambda (i)
+                   (map (lambda (j) (list i j))
+                        (enumerate-interval 1 (- i 1))))
+                 (enumerate-interval 1 n)))))
+
+; (print (prime-sum-pairs 6))
