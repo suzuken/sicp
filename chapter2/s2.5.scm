@@ -1,4 +1,5 @@
 ; 2.5
+;
 (define (add x y) (apply-generic 'add x y))
 (define (add x y) (apply-generic 'add x y))
 (define (add x y) (apply-generic 'add x y))
@@ -64,10 +65,12 @@
 
 ; 複素数パッケージ
 (define (install-complex-package)
+  ;; 直交座標と極座標パッケージから取り入れた手続き
   (define (make-from-real-imag x y)
     (( get 'make-from-real-imag ' rectangular) x y))
   (define (make-from-mag-ang r a)
     ((get 'make-from-mag-ang 'polar) r a))
+
   ;;internal procedures
   (define (add-complex z1 z2)
     (make-from-real-imag (+ (real-part z1) (real-part z2))
@@ -81,6 +84,7 @@
   (define (div-complex z1 z2)
     (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
                        (- (angle z1) (angle z2))))
+
   ;; interface to rest of the system
   (define (tag z) (attach-tag 'complex z))
   (put 'add '(complex complex)
@@ -100,5 +104,6 @@
 
 (define (make-complex-from-real-imag x y)
   ((get 'make-from-real-imag 'complex) x y))
+
 (define (make-complex-from-mag-ang r a)
   ((get 'make-from-mag-ang 'complex) r a))
