@@ -1,5 +1,6 @@
 ; 2.5
 ;
+; 2.5.1 汎用算術演算
 (define (add x y) (apply-generic 'add x y))
 (define (add x y) (apply-generic 'add x y))
 (define (add x y) (apply-generic 'add x y))
