@@ -1,4 +1,6 @@
 ; 2.4 抽象データの多重表現
+(define true #t)
+(define false #f)
 
 ; 加法的に
 
@@ -209,8 +211,44 @@
 ;
 ; putとgetを用いてシステム設計をさらに部品化する。
 
+; 一旦3.3.3からput, getの実装を借りてくる
+
+(define (make-table)
+    (let ((local-table (list '*table*)))
+      (define (lookup key-1 key-2)
+          (let ((subtable (assoc key-= (cdr local-table))))
+            (if subtable
+              (let ((record (assoc key-2 (cdr subtable))))
+                (if record
+                  (cdr record)
+                  false))
+                false)))
+      (define (insert! key-1 key-2 value)
+          (let ((subtable (assoc key-1 (cdr local-table))))
+            (if subtable
+              (let ((record (assoc key-2 (cdr subtable))))
+                (if record
+                  (set-cdr! record value)
+                  (set-cdr! subtable
+                            (cons (cons key-2 value)
+                                  (cdr subtable)))))
+              (set-cdr! local-table
+                        (cons (list key-1
+                                    (cons key-2 value))
+                              (cdr local-table)))))
+          'ok)
+      (define (dispatch m)
+          (cond ((eq? m 'lookup-proc) lookup)
+                ((eq? m 'insert-proc!) insert!)
+                (else (error "Unknown operation --TABLE" m))))
+      dispatch))
+(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc!))
+
 
 ; 直交座標系のためのパッケージ
+(define (square x) (* x x))
 (define (install-rectangular-package)
   ; internal procedure
   (define (real-part z)
@@ -292,3 +330,21 @@
 (define (angle z)
     (apply-generic 'angle z))
 
+; message passing
+
+; オペレータによって処理を切り替える。
+; 「賢明なデータオブジェクト」で仕事をさせる。
+;(define (make-from-real-imag x y)
+;    (define (dispatch op)
+;        (cond ((eq? op 'real-part) x)
+;              ((eq? op 'imag-part) y)
+;              ((eq? op 'magnitude)
+;               (sqrt (+ (square x) (square y))))
+;              ((eq? op 'angle) (atan y x))
+;              (else
+;                (error "Unknown op -- MAKE-FROM-REAL-IMAG" op))))
+;    dispatch)
+;
+; message passingの場合、apply-generic手続きは簡潔に以下のようにすれば良い
+;(define (apply-generic op arg)
+;    (arg op))

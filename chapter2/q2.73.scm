@@ -45,6 +45,11 @@
      (make-sum (deriv (car ops) var)
                (deriv (cadr exp) var)))
 
+  (put 'deriv '(sum) deriv-sum)
+  'done)
+
+(define (install-deriv-product)
+
   (define (deriv-product ops var)
      (make-sum
        (make-product (multiplier exp)
@@ -52,9 +57,5 @@
        (make-product (deriv (multiplier exp) var)
                      (multiplicand exp))))
 
-  ; interface
-  (define (tag x)
-      (attach-tag 'deriv x))
-  (put 'sum deriv-sum)
-  (put 'product deriv-product)
+  (put 'deriv '(product) deriv-product)
   'done)
