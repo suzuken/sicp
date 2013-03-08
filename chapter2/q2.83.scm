@@ -30,14 +30,38 @@
 ;
 ; ひとまず一つ上の型に変換する手続きがraiseなので、
 ;
-; * 'scheme-numberが来たら'rationalに変換する
+; * 'integerが来たら'rationalに変換する
 ; * 'rationalが来たら、'realに変換する
 ;
 ; としてあげればよい。
 ;
 
 ; 実数の算術演算パッケージがないので作る
-; 普通にgosh処理系に渡してるだけ
+(define (install-integer-package)
+  (define (tag x)
+    (attach-tag 'integer x))
+  (put 'add '(integer integer)
+       (lambda (x y) (tag (+ x y))))
+  (put 'sub '(integer integer)
+       (lambda (x y) (tag (- x y))))
+  (put 'mul '(integer integer)
+       (lambda (x y) (tag (* x y))))
+  (put 'div '(integer integer)
+       (lambda (x y) (tag (/ x y))))
+  (put 'equ? '(integer integer)
+       (lambda (x y) (= x y)))
+  (put '=zero? '(integer)
+       (lambda (x) (= x 0)))
+  (put 'make 'integer
+       (lambda (x) (if (integer? x)
+                     (tag x)
+                     (error "Non-integer value is given." x))))
+  'done)
+
+(define (make-integer n)
+  ((get 'make 'integer) n))
+
+
 (define (install-real-package)
   (define (tag x)
     (attach-tag 'real x))
@@ -60,13 +84,13 @@
 (define (make-real n)
   ((get 'make 'real) n))
 
-(install-scheme-number-package)
+(install-integer-package)
 (install-rational-package)
 (install-real-package)
 
 (define (install-raise-package)
   ;; interface to rest of the system
-  (put 'raise '(scheme-number)
+  (put 'raise '(integer)
        (lambda (z) (make-rational z 1)))
   (put 'raise '(rational)
        (lambda (z) (make-real z)))
@@ -82,14 +106,14 @@
 ;(use slib)
 ;(require 'trace)
 ;(trace raise)
-;(print (raise (make-scheme-number 1)))
-;(print (make-scheme-number 1))
+;(print (raise (make-integer 1)))
+;(print (make-integer 1))
 
 (use gauche.test)
 (test-start "raise")
-(test* "scheme-numberを作ってみる" '(scheme-number . 1) (make-scheme-number 1))
-(test* "scheme-numberをraiseしてみる" (raise (make-scheme-number 1)) (make-rational 1 1))
-(test* "schcme-number->rationalの型変換してみる" (raise (make-scheme-number 1)) '(rational 1 . 1))
+(test* "integerを作ってみる" '(integer . 1) (make-integer 1))
+(test* "integerをraiseしてみる" (raise (make-integer 1)) (make-rational 1 1))
+(test* "schcme-number->rationalの型変換してみる" (raise (make-integer 1)) '(rational 1 . 1))
 (test* "rational->realの型変換してみる" (raise (make-rational 1 1)) '(real 1 . 1))
 (test-end)
 
