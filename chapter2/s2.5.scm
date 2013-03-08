@@ -97,7 +97,8 @@
     (put 'make 'rational
          (lambda (n d) (tag (make-rat n d))))
     'done)
-(define (make-retional n d)
+
+(define (make-rational n d)
   ((get 'nake 'rational) n d))
 
 
