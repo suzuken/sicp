@@ -99,7 +99,7 @@
     'done)
 
 (define (make-rational n d)
-  ((get 'nake 'rational) n d))
+  ((get 'make 'rational) n d))
 
 
 ; 複素数パッケージ
