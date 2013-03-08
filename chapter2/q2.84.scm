@@ -53,25 +53,25 @@
 ;
 ;
 (define (apply-generic op . args)
-    (let ((type-tags (map type-tag args)))
-      (let ((proc (get op type-tags)))
-        (if proc
-          (apply proc (map contents args))
-          (if (= (length args) 2)
-            (let ((type1 (car type-tags))
-                  (type2 (cadr type-tags))
-                  (a1 (car args))
-                  (a2 (cadr args)))
-              (if (eq? type1 type2)
-                (error "Same type is defined." (list op type-tags))
-                ; lowerだったらraiseして回す
-                (let ((low (lower type1 type2)))
-                  (cond ((eq? low type1) (apply-generic op ((raise low) a1) a2))
-                        ((eq? low type2) (apply-generic op a1 ((raise low) a2)))
-                        (else (error "Exception" (list op type-tags)))))))
-            (error "arg length is not 2"))
-            (error "No method for these types"
-                   (list op type-tags)))))))
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+        (apply proc (map contents args))
+        (if (= (length args) 2)
+          (let ((type1 (car type-tags))
+                (type2 (cadr type-tags))
+                (a1 (car args))
+                (a2 (cadr args)))
+            (if (eq? type1 type2)
+              (error "Same type is defined." (list op type-tags))
+              ; lowerだったらraiseして回す
+              (let ((low (lower type1 type2)))
+                (cond ((eq? low type1) (apply-generic op ((raise low) a1) a2))
+                      ((eq? low type2) (apply-generic op a1 ((raise low) a2)))
+                      (else (error "Exception" (list op type-tags)))))))
+          (error "arg length is not 2"))
+        (error "No method for these types"
+               (list op type-tags))))))
 
 ; ジャストアイディアだけど、もし等しくなかったら1つ目をraise
 ; また等しくなかったらまたraise
