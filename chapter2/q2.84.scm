@@ -1,6 +1,9 @@
 (load "./s2.4.scm")
 (load "./s2.5.scm")
 
+; raise手続きを拝借
+(load "./q2.83.scm")
+
 ; 2.84
 ;
 ; 2.83で作ったraiseの手続きを利用して、apply-generic手続きを書きなおせ、という問題。
@@ -34,23 +37,23 @@
           ((eq? low-type #f) #f)
           (else (error "illegal exception")))))
 
-; とりあえずテストから書いておく
-(use gauche.test)
-(test-start "apply-generic-raise")
-(test* "rational is higher than integer"
-       'rational
-       (higher 'rational 'integer))
-(test* "real is higher than integer"
-       'real
-       (higher 'real 'integer))
-(test* "when equals types, return itself"
-       'real
-       (higher 'real 'real))
-(test-end)
+; higherのテスト
+;
+; (use gauche.test)
+; (test-start "higher-lower")
+; (test* "rational is higher than integer"
+;        'rational
+;        (higher 'rational 'integer))
+; (test* "real is higher than integer"
+;        'real
+;        (higher 'real 'integer))
+; (test* "when equals types, return itself"
+;        'real
+;        (higher 'real 'real))
+; (test-end)
 
 ; 2.5.2で出てきたget-coercionを利用したパターンではなく、
 ; 各型におけるraiseを呼ぶようにする。
-;
 ;
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
@@ -66,15 +69,31 @@
               (error "Same type is defined." (list op type-tags))
               ; lowerだったらraiseして回す
               (let ((low (lower type1 type2)))
-                (cond ((eq? low type1) (apply-generic op ((raise low) a1) a2))
-                      ((eq? low type2) (apply-generic op a1 ((raise low) a2)))
+                (cond ((eq? low type1) (apply-generic op (raise a1) a2))
+                      ((eq? low type2) (apply-generic op a1 (raise a2)))
                       (else (error "Exception" (list op type-tags)))))))
-          (error "arg length is not 2"))
-        (error "No method for these types"
-               (list op type-tags))))))
+          (error "No method for these types"
+                 (list op type-tags)))))))
 
-; ジャストアイディアだけど、もし等しくなかったら1つ目をraise
-; また等しくなかったらまたraise
-; もしraiseが定義されてなかったら終了
-; 2つ目の引数でも同様に、とやれば、一応動きそう
-; エレガントではないけど。
+; ================== TESTING =====================
+; (install-rectangular-package)
+; (install-polar-package)
+; (install-scheme-number-package)
+; (install-rational-package)
+; (install-complex-package)
+; (install-integer-package)
+; (install-real-package)
+; (install-raise-package)
+
+; (use slib)
+; (require 'trace)
+; (trace apply-generic)
+
+; (test-start "apply-generic-raise")
+; (test* "3 + 2/3 = 11/3"
+;        (make-rational 11 3)
+;        (add (make-integer 3) (make-rational 2 3)))
+; (test* "3 + (2 + 3i) = 5 + 3i"
+;        (make-complex-from-real-imag 5 3)
+;        (add (make-integer 3) (make-complex-from-real-imag 2 3)))
+; (test-end)

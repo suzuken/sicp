@@ -61,6 +61,8 @@
 (define (make-integer n)
   ((get 'make 'integer) n))
 
+; (install-integer-package)
+; (print (make-integer 3))
 
 (define (install-real-package)
   (define (tag x)
@@ -93,7 +95,7 @@
   (put 'raise '(integer)
        (lambda (z) (make-rational z 1)))
   (put 'raise '(rational)
-       (lambda (z) (make-real z)))
+       (lambda (z) (make-real (/ (car z) (cdr z)))))
   (put 'raise '(real)
        (lambda (x) (make-complex-from-real-imag x 0)))
   'done)
@@ -109,11 +111,10 @@
 ;(print (raise (make-integer 1)))
 ;(print (make-integer 1))
 
-(use gauche.test)
-(test-start "raise")
-(test* "integerを作ってみる" '(integer . 1) (make-integer 1))
-(test* "integerをraiseしてみる" (raise (make-integer 1)) (make-rational 1 1))
-(test* "schcme-number->rationalの型変換してみる" (raise (make-integer 1)) '(rational 1 . 1))
-(test* "rational->realの型変換してみる" (raise (make-rational 1 1)) '(real 1 . 1))
-(test-end)
+; (use gauche.test)
+; (test-start "raise")
+; (test* "integerを作ってみる" '(integer . 1) (make-integer 1))
+; (test* "integerをraiseしてみる" (raise (make-integer 1)) (make-rational 1 1))
+; (test* "rational->realの型変換してみる" (raise (make-rational 1 1)) (make-real 1))
+; (test-end)
 

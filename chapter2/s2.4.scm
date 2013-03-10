@@ -1,6 +1,7 @@
 ; 2.4 抽象データの多重表現
 (define true #t)
 (define false #f)
+(use gauche.test)
 
 ; 加法的に
 
@@ -63,7 +64,7 @@
 (define (magnitude z)
     (sqrt (+ (square (real-part z)) (square (imag-part z)))))
 
-(define (angl z)
+(define (angle z)
     (atan (imag-part z) (real-part z)))
 
 ; 直交座標からそのまま表現するのでそのままconsで返す
@@ -216,7 +217,7 @@
 (define (make-table)
     (let ((local-table (list '*table*)))
       (define (lookup key-1 key-2)
-          (let ((subtable (assoc key-= (cdr local-table))))
+          (let ((subtable (assoc key-1 (cdr local-table))))
             (if subtable
               (let ((record (assoc key-2 (cdr subtable))))
                 (if record
@@ -329,6 +330,20 @@
     (apply-generic 'magnitude z))
 (define (angle z)
     (apply-generic 'angle z))
+
+
+; ================== TESTING =====================
+; (install-rectangular-package)
+; (install-polar-package)
+; apply-generic適用のテスト
+;(test-start "apply-generic")
+;(test* "real part"
+;       3
+;       (real-part (make-from-real-imag 3 2)))
+;(test* "imag part"
+;       2
+;       (imag-part (make-from-real-imag 3 2)))
+;(test-end)
 
 ; message passing
 

@@ -1,6 +1,10 @@
 ; 2.5
 (define true #t)
 (define false #f)
+(use gauche.test)
+
+; attach-tagなどのインポート
+(load "./s2.4.scm")
 ;
 ; 一旦3.3.3からput, getの実装を借りてくる
 
@@ -205,6 +209,20 @@
                                (list op type-tags))))))
             (error "No method for these types"
                    (list op type-tags)))))))
+
+; ================== TESTING =====================
+; (install-rectangular-package)
+; (install-polar-package)
+; (install-scheme-number-package)
+; (install-rational-package)
+; (install-complex-package)
+;
+; 強制的に型変換が行われ、scheme-numberとcomplexの加算を行うことができるようになっている
+; (test-start "apply-generic")
+; (test* "2 + (3 + 2i) = 5 + 2i"
+;        (make-complex-from-real-imag 5 2)
+;        (add (make-scheme-number 2) (make-complex-from-real-imag 3 2)))
+; (test-end)
 
 ; 明示的に型の間の演算を定義するより多くの利点がある。
 ;
