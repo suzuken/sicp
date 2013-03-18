@@ -269,27 +269,6 @@
 ;(print (accumulate + 0 (list 1 2 3 4 5)))
 ; 15
 
-; 2.35
-;
-; (define (count-leaves x)
-;   (cond ((null? x) 0)
-;         ((not (pair? x)) 1)
-;         (else (+ (count-leaves (car x))
-;                  (count-leaves (cdr x))))))
-
-; 穴埋め
-(define (enumerate-tree tree)
-  (cond ((null? tree) nil)
-        ((not (pair? tree)) (list tree))
-        (else (append (enumerate-tree (car tree))
-                      (enumerate-tree (cdr tree))))))
-
-(define (count-leaves-acc t)
-  (accumulate + 0 (map (lambda (x) 1) (enumerate-tree t))))
-
-; (print (count-leaves-acc (list 1 2 3 4 5)))
-; -> 5
-
 ; 2.36
 
 (define (accumulate-n op init seqs)
