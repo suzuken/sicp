@@ -20,5 +20,5 @@
 ; TESTTING
 
 (use gauche.test)
-(test* "horner-eval f(3) when f(x) = x + 1" 4 (horner-eval 3 (list 1 1)))
-(test* "horner-eval f(2) when f(x) = x^5 + 3x^4 + 5x^2 + 1" 79 (horner-eval 2 (list 1 3 0 5 0 1)))
+(test* "horner-eval f(3) when f(x) = 2x + 1" 7 (horner-eval 3 (list 1 2)))
+(test* "horner-eval f(2) when f(x) = x^5 + 5x^3 + 3x^1 + 1" 79 (horner-eval 2 (list 1 3 0 5 0 1)))
