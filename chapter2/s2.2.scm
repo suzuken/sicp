@@ -269,7 +269,6 @@
 ;(print (accumulate + 0 (list 1 2 3 4 5)))
 ; 15
 
-; 2.38
 
 
 ; p.71

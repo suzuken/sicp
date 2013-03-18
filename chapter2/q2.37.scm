@@ -18,12 +18,16 @@
 (define (dot-product v w)
   (accumulate + 0 (map * v w)))
 
+; 行列の各列について当該ベクトルとの内積を計算すれば良い
 (define (matrix-*-vector m v)
   (map (lambda (row) (dot-product row v)) m))
 
+; 行の要素をそれぞれ順番に取得していけば転置行列に。
+; ものすごくシンプル。
 (define (transpose mat)
   (accumulate-n cons nil mat))
 
+; 各列ベクトルについての積として分解できる
 (define (matrix-*-matrix m n)
   (let ((cols (transpose n)))
     (map (lambda (row) (matrix-*-vector cols row)) m)))
