@@ -23,12 +23,12 @@
 ; (trace type-tag)
 ; (print (add p1 p2))
 (test* 
-  "test"
+  "test (2x^100 + 20x) = (0x^100 + 10x) + (2x^100 + 10x)"
   (make-polynomial 'x '((100 2) (1 20)))
   (add (make-polynomial 'x '((100 0) (1 10))) (make-polynomial 'x '((100 2) (1 10)))))
 
 (test* 
-  "test2"
-  (make-polynomial 'x '((2 ,y1) (1 ,y2) (0 ,y3)))
+  "test y1 * x^2 + y2 * x^1 + y3 = (y1 * x^2 + y2 * x^1 + y3) + (y4 * x^1 + y5)"
+  (make-polynomial 'x '((2 ,y1) (1 ,y2) (0 ,y3) (1 ,y4) (0 ,y5)))
   (add (make-polynomial 'x '((2 ,y1) (1 ,y2) (0 ,y3)))
        (make-polynomial 'x '((1 ,y4) (0 ,y5)))))
