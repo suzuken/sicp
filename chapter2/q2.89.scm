@@ -15,7 +15,6 @@
 ; 実装方針としてはインタフェースをinstall-polynoiral-packageと替えず、中身を濃い多項式に適している項リストの表現にするパッケージを書く
 (define (install-dense-polynomial-package)
   (define (make-poly variable term-list)
-    (print variable term-list)
     (cons variable term-list))
   (define (variable p) (car p))
   (define (term-list p) (cdr p))
@@ -51,18 +50,20 @@
 
   ; 項リストの表現
   (define (adjoin-term term term-list)
-    (print 'adjoin-term term term-list)
     (if (=zero? (coeff term))
       term-list
       (cons term term-list)))
 
   (define (the-empty-termlist) '())
   (define (first-term term-list) (car term-list))
-  (define (rest-terms term-list)
-    (if (pair? term-list)
-      (cdr term-list)
-      the-empty-termlist))
+  (define (rest-terms term-list) (cdr term-list))
   (define (empty-termlist? term-list) (null? term-list))
+  (define (make-term-list terms)
+    (if (empty-termlist? terms)
+        (the-empty-termlist)
+        (if (=zero? (first-term terms))
+            (make-term-list (rest-terms terms))
+            terms)))
   ;(define (make-term order coeff) (list order coeff))
   ; lengthによって変わる。term-listを渡すように変更
   (define (order term-list)
@@ -74,26 +75,33 @@
   ; p.120
   ; このadd-termsは新しい項表現向けに書き換える必要がある
   ; 低い項から足していく必要がある
+  ;
+  ; (add-terms (1 2 3) (4 5 6 7))
+  ;
+  ; だったら (make-term-list 4 (add 1 5) (add 2 6) (add 3 7))
+  ;
+  ; としたい
   (define (add-terms L1 L2)
-    (print L1 L2)
     (cond ((empty-termlist? L1) L2)
           ((empty-termlist? L2) L1)
           (else
-            (let ((t1 (first-term L1)) (t2 (first-term L2)))
-              (cond ((> (order L1) (order L2))
-                     (adjoin-term
-                       t1 (add-terms (rest-terms L1) L2)))
-                    ((< (order L1) (order L2))
-                     (adjoin-term
-                       t2 (add-terms L1 (rest-terms L2))))
-                    (else
-                      (if (pair? L1)
-                        (adjoin-term
-                          (add t1 t2)
-                          (add-terms (rest-terms L1)
-                                     (rest-terms L2)))
-                        (+ t1 t2)
-                        )))))))
+            (let* ((reversed-L1 (reverse L1))
+                   (reversed-L2 (reverse L2))
+                   (long (longer reversed-L1 reversed-L2))
+                   (short (shorter reversed-L1 reversed-L2)))
+              (make-term-list (reverse (do-add-terms long short)))))))
+
+  (define (do-add-terms long short)
+    (if (null? short)
+      long
+      (cons (add (first-term long) (first-term short))
+            (do-add-terms (rest-terms long) (rest-terms short)))))
+
+  (define (longer L1 L2)
+    (if (> (length L1) (length L2)) L1 L2))
+
+  (define (shorter L1 L2)
+    (if (<= (length L1) (length L2)) L1 L2))
 
   (define (mul-terms L1 L2)
     (if (empty-termlist? L1)
