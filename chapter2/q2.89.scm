@@ -15,6 +15,7 @@
 ; 実装方針としてはインタフェースをinstall-polynoiral-packageと替えず、中身を濃い多項式に適している項リストの表現にするパッケージを書く
 (define (install-dense-polynomial-package)
   (define (make-poly variable term-list)
+    (print variable term-list)
     (cons variable term-list))
   (define (variable p) (car p))
   (define (term-list p) (cdr p))
@@ -50,17 +51,24 @@
 
   ; 項リストの表現
   (define (adjoin-term term term-list)
+    (print 'adjoin-term term term-list)
     (if (=zero? (coeff term))
       term-list
       (cons term term-list)))
 
   (define (the-empty-termlist) '())
   (define (first-term term-list) (car term-list))
-  (define (rest-terms term-list) (cdr term-list))
+  (define (rest-terms term-list)
+    (if (pair? term-list)
+      (cdr term-list)
+      the-empty-termlist))
   (define (empty-termlist? term-list) (null? term-list))
-  (define (make-term order coeff) (list order coeff))
+  ;(define (make-term order coeff) (list order coeff))
   ; lengthによって変わる。term-listを渡すように変更
-  (define (order term-list) (length (rest-terms term-list)))
+  (define (order term-list)
+    (if (> (length term-list) 1)
+      (length (rest-terms term-list))
+      1))
   (define (coeff term) (first-term term))
 
   ; p.120
@@ -79,10 +87,13 @@
                      (adjoin-term
                        t2 (add-terms L1 (rest-terms L2))))
                     (else
-                      (adjoin-term
-                        (add t1 t2)
-                        (add-terms (rest-terms L1)
-                                   (rest-terms L2)))))))))
+                      (if (pair? L1)
+                        (adjoin-term
+                          (add t1 t2)
+                          (add-terms (rest-terms L1)
+                                     (rest-terms L2)))
+                        (+ t1 t2)
+                        )))))))
 
   (define (mul-terms L1 L2)
     (if (empty-termlist? L1)
@@ -123,6 +134,7 @@
 
 (install-dense-polynomial-package)
 (install-scheme-number-package)
+(install-=zero?-package)
 (define (make-polynomial var terms)
   ((get 'make 'polynomial) var terms))
 
