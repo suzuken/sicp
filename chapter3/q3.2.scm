@@ -15,15 +15,13 @@
 
 ; 初期化
 (define s (make-monitored sqrt))
-;(print (s 100))
-;-> 10
-;(print (s 'how-many-call?))
-;-> 1
-;(print (s 'reset-count))
-;-> 0
-;(print (s 100))
-;-> 10
-;(print (s 100))
-;-> 10
-;(print (s 'how-many-call?))
-;-> 2
+
+(use gauche.test)
+(test* "called" 0 (s 'how-many-call?))
+(test* "10^2" 10 (s 100))
+(test* "called" 1 (s 'how-many-call?))
+(s 'reset-count)
+(test* "reset" 0 (s 'how-many-call?))
+(s 100)
+(s 101)
+(test* "called" 2 (s 'how-many-call?))
