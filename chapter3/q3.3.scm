@@ -21,11 +21,9 @@
   dispatch)
 
 (define acc (make-account 100 'secret-password))
-(print ((acc 'hoge-secret-password 'withdraw) 40))
-;Incorrect password
-(print ((acc 'secret-password 'withdraw) 40))
-;60
-(print ((acc 'secret-password 'deposit) 50))
-;110
-(print ((acc 'hoge-secret-password 'deposit) 50))
-;Incorrect password
+
+(use gauche.test)
+(test* "incorrect" "Incorrect password" ((acc 'hoge-secret-password 'withdraw) 40))
+(test* "secret-password" 60 ((acc 'secret-password 'withdraw) 40))
+(test* "secret-password" 110 ((acc 'secret-password 'deposit) 50))
+(test* "secret-password" "Incorrect password" ((acc 'hoge-secret-password 'deposit) 50))
