@@ -208,7 +208,7 @@
 
 (define (first-frame env) (car env))
 
-(define the-empty-envinment '())
+(define the-empty-environment '())
 
 (define (make-frame variables values)
   (cons variables values))
@@ -236,7 +236,7 @@
             ((eq? var (car vars))
              (car vals))
             (else (scan (cdr vars) (cdr vals)))))
-    (if (eq? env the-empty-envinment)
+    (if (eq? env the-empty-environment)
       (error "Unbound variable" var)
       (let ((frame (first-frame env)))
         (scan (frame-variables frame)
@@ -251,7 +251,7 @@
             ((eq? var (car vars))
              (set-car! vals val))
             (else (scan (cdr vars) (cdr vals)))))
-    (if (eq? env the-empty-envinment)
+    (if (eq? env the-empty-environment)
       (error "Unbound variable -- SET!" var)
       (let ((frame (first-frame env)))
         (scan (frame-variables frame)
@@ -299,7 +299,7 @@
   (let ((initial-env
           (extend-environment (primitive-procedure-names)
                               (primitive-procedure-objects)
-                              the-empty-envinment)))
+                              the-empty-environment)))
     (define-variable! 'true #t initial-env)
     (define-variable! 'false #f initial-env)
     initial-env))
