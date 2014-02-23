@@ -59,7 +59,7 @@
                        env)
   'ok)
 
-(define (eval-desinition exp env)
+(define (eval-definition exp env)
   (define-variable! (definition-variable exp)
                     (eval (definition-value exp) env)
                     env)
@@ -106,7 +106,7 @@
 
 (define (lambda? exp) (tagged-list? exp 'lambda))
 
-(define (lambda-paramters exp) (cadr exp))
+(define (lambda-parameters exp) (cadr exp))
 
 (define (lambda-body exp) (cadr exp))
 
@@ -280,6 +280,7 @@
         (list 'cdr cdr)
         (list 'cons cons)
         (list 'print print)
+        (list 'load load)
         (list '+ +)
         (list '- -)
         (list '* *)
