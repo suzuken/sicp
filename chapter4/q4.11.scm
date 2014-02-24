@@ -225,6 +225,7 @@
 (define (make-frame variables values)
   (map cons variables values))
 
+; (k1 v1) (k2 v2)
 ; (k1 k2 k3 ...)
 (define (frame-variables frame)
   (map car frame))
@@ -235,10 +236,12 @@
 
 ; cdrに対を加えれば良い
 ; 
-; (cons k1 v1) (cons k2 v2) (cons k3 v3)
-; (cons k_new v_new) (cons k1 v1) (cons k2 v2) (cons k3 v3)
+; (list (cons k1 v1) (cons k2 v2) (cons k3 v3))
+; (list (cons k_new v_new) (cons k1 v1) (cons k2 v2) (cons k3 v3))
 (define (add-binding-to-frame! var val frame)
-  (set-cdr! frame (cons (cons var val) (cdr frame))))
+  (set! frame (cons (cons var val) frame))
+  ; (set-cdr! frame (cons (cons var val) (cdr frame)))
+  (print frame))
 
 ; lookup-variable-valueはそのまま
 ; set-variable-value!もそのまま
@@ -300,7 +303,8 @@
       (cond ((null? vars)
              (add-binding-to-frame! var val frame))
             ((eq? var (car vars))
-             (set-car! vals val))
+             ; (set-car! vals val))
+             (add-binding-to-frame! var val frame))
             (else (scan (cdr vars) (cdr vals)))))
     (scan (frame-variables frame)
           (frame-values frame))))
