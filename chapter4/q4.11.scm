@@ -221,16 +221,22 @@
 (define the-empty-environment '())
 
 ; q4.11
+; (cons k1 v1) (cons k2 v2) (cons k3 v3) ... ってなってる
 (define (make-frame variables values)
   (map cons variables values))
 
+; (k1 k2 k3 ...)
 (define (frame-variables frame)
   (map car frame))
 
+; (v1 v2 v3 ...)
 (define (frame-values frame)
   (map cdr frame))
 
 ; cdrに対を加えれば良い
+; 
+; (cons k1 v1) (cons k2 v2) (cons k3 v3)
+; (cons k_new v_new) (cons k1 v1) (cons k2 v2) (cons k3 v3)
 (define (add-binding-to-frame! var val frame)
   (set-cdr! frame (cons (cons var val) (cdr frame))))
 
@@ -239,6 +245,7 @@
 ; define-variable!もそのまま
 
 ; 元のやつ
+; (cons (k1 k2 k3 ....) (v1 v2 v3 ...)) って感じ
 ; (define (make-frame variables values)
   ; (cons variables values))
 
