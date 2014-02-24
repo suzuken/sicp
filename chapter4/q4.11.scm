@@ -239,9 +239,14 @@
 ; (list (cons k1 v1) (cons k2 v2) (cons k3 v3))
 ; (list (cons k_new v_new) (cons k1 v1) (cons k2 v2) (cons k3 v3))
 (define (add-binding-to-frame! var val frame)
-  (set! frame (cons (cons var val) frame))
-  ; (set-cdr! frame (cons (cons var val) (cdr frame)))
-  (print frame))
+  (set-cdr! frame (cons (car frame) (cdr frame)))
+  (set-car! frame (cons var val)))
+  ; (let ((head (cons frame (cdr frame))))
+    ; (set-car! frame (cons var val))
+    ; (set-cdr! frame head))
+  ; )
+
+; (set-cdr! frame (cons (cons var val) (cdr frame)))
 
 ; lookup-variable-valueはそのまま
 ; set-variable-value!もそのまま
@@ -284,30 +289,24 @@
 
 (define (set-variable-value! var val env)
   (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars)
+    (define (scan frame)
+      (print env)
+      (cond ((null? frame)
              (env-loop (enclosing-environment env)))
-            ((eq? var (car vars))
-             (set-car! vals val))
-            (else (scan (cdr vars) (cdr vals)))))
+            ((eq? var (car (car frame)))
+             (set-cdr! (car frame) val))
+            (else (scan (cdr frame)))))
     (if (eq? env the-empty-environment)
       (error "Unbound variable -- SET!" var)
       (let ((frame (first-frame env)))
-        (scan (frame-variables frame)
-              (frame-values frame)))))
+        (scan frame))))
   (env-loop env))
 
+; defineならそのまま突っ込めば良くなる
 (define (define-variable! var val env)
   (let ((frame (first-frame env)))
-    (define (scan vars vals)
-      (cond ((null? vars)
-             (add-binding-to-frame! var val frame))
-            ((eq? var (car vars))
-             ; (set-car! vals val))
-             (add-binding-to-frame! var val frame))
-            (else (scan (cdr vars) (cdr vals)))))
-    (scan (frame-variables frame)
-          (frame-values frame))))
+    (set-cdr! frame (cons (car frame) (cdr frame)))
+    (set-car! frame (cons var val))))
 
 ; q4.13
 (define (unbind? exp)
