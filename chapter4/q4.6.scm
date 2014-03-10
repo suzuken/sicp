@@ -7,8 +7,10 @@
   (cadr exp))
 (define (let-body exp)
   (cddr exp))
-(define (let-vars exp) ((caadr exp) (let-vars (cddr exp))))
-(define (let-exps exp) ((cdadr exp) (let-exps (cddr exp))))
+(define (let-variables exp)
+  (map car (let-parameters exp)))
+(define (let-expressions exp)
+  (map cadr (let-parameters exp)))
 
 (define (let->combination exp)
   (if (null? (let-parameters exp))
