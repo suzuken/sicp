@@ -1,13 +1,21 @@
 ; q4.6
 
 ; let式が現れたらlambdaに置き換えれば良い
+(define (let? exp)
+  (tagged-list? exp 'let))
+(define (let-parameters exp)
+  (cadr exp))
+(define (let-body exp)
+  (cddr exp))
 (define (let-vars exp) ((caadr exp) (let-vars (cddr exp))))
 (define (let-exps exp) ((cdadr exp) (let-exps (cddr exp))))
 
-(define (let->combination exp env)
-  (make-procedure (let-vars exp)
-                  env
-                  (let-exps exp)))
+(define (let->combination exp)
+  (if (null? (let-parameters exp))
+    '()
+    (cons
+      (make-lambda (let-variables exp) (let-body exp))
+      (let-expressions exp))))
 
 ; eval
 (define (eval exp env)
