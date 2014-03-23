@@ -2,6 +2,7 @@
 
 ; eval
 (define (eval exp env)
+  (print "exp=> " exp)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
@@ -337,5 +338,3 @@
                    '<procedure-env>))
     (display object)))
 
-(define the-global-environment (setup-environment))
-(driver-loop)

@@ -79,7 +79,7 @@
         ; 特殊形式let
         ((let? exp)
          (analyze (let->combination exp)))
-        ((begin? exp) #?=(analyze-sequence #?=(begin-actions exp)))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
         ((cond? exp) (analyze (cond->if exp)))
         ((application? exp) (analyze-application exp))
         (else
@@ -136,13 +136,14 @@
       (error "Empty sequence -- ANALYZE"))
     #?=(lambda (env) (execute-sequence procs env))))
 
-(use slib)
-(require 'trace)
-(trace analyze-sequence)
+; (use slib)
+; (require 'trace)
+; (trace analyze-sequence)
 
+; 本文バージョン
 ; (define (analyze-sequence exps)
 ;   (define (sequentially proc1 proc2)
-;     (lambda (env) (proc1 env) (proc2 env)))
+;     #?=(lambda (env) (proc1 env) (proc2 env)))
 ;   (define (loop first-proc rest-procs)
 ;     (if (null? rest-procs)
 ;       first-proc
