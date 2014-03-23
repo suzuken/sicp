@@ -11,6 +11,7 @@
         ((definition? exp) (analyze-definition exp))
         ((if? exp) (analylze-if exp))
         ((lambda? exp) (analyze-lambda exp))
+        ; 特殊形式let
         ((let? exp)
          (analyze (let->combination exp)))
         ((begin? exp) (analyze-sequence (begin-actions exp)))
@@ -168,6 +169,7 @@
 (define (make-lambda parameters body)
   (cons 'lambda (cons parameters body)))
 
+; q4.22
 (define (let? exp)
   (tagged-list? exp 'let))
 
@@ -433,3 +435,7 @@
 
 (define the-global-environment (setup-environment))
 (driver-loop)
+
+; 試験
+; (let ((a 1)) (print a))
+; -> 1
