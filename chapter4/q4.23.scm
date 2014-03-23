@@ -1,3 +1,68 @@
+; q4.23
+
+; Alyssaが新しいanalyze-sequenceを提案
+
+; (define (analyze-sequence exps)
+;   (define (execute-sequence procs env)
+;     (cond ((null? (cdr procs)) ((car procs) env))
+;           (else ((car procs) env)
+;                 (execute-sequence (cdr procs) env))))
+;   (let ((procs (map analyze exps)))
+;     (if (null? procs)
+;       (error "Empty sequence -- ANALYZE"))
+;     (lambda (env) (execute-sequence procs env))))
+
+; 本文中 p.236 のがこちら
+; 
+; (define (analyze-sequence exps)
+;   (define (sequentially proc1 proc2)
+;     ;ここで並んでいる手続きを解析している
+;     (lambda (env) (proc1 env) (proc2 env)))
+;   (define (loop first-proc rest-procs)
+;     (if (null? rest-procs)
+;       first-proc
+;       (loop (sequentially first-proc (car rest-procs))
+;             (cdr rest-procs))))
+;   (let ((procs (map analyze exps)))
+;     (if (null? procs)
+;       (error "Empty sequence -- ANALYZE"))
+;     (loop (car procs) (cdr procs))))
+
+; 並びが一つのしかもたない通常の場合には同様の動作をする。
+
+; 例
+; (begin 
+;   (print "Hello 1")
+;   (print "Hello 2")
+;   (print "Hello 3")
+;   'done)
+; 
+; (begin 
+;   (define x 5)
+;   (print x)
+;   'done)
+; 
+; (begin 
+;   (define (sqrt x) (* x x))
+;   (print (sqrt 5))
+;   'done)
+; 
+; (begin
+;   (define (sum x) (+ 1 x))
+;   (print (sum 5))
+;   'done)
+
+; http://sicp.iijlab.net/fulltext/x311.html より
+; (define balance 100)
+; (define (withdraw amount)
+;   (if (>= balance amount)
+;       (begin (set! balance (- balance amount))
+;              balance)
+;       "Insufficient funds"))
+
+
+; TODO 自分の書いた超循環評価器でうまく動かないので再調査
+
 ; q4.22
 (define (eval exp env)
   ((analyze exp) env))
@@ -14,7 +79,7 @@
         ; 特殊形式let
         ((let? exp)
          (analyze (let->combination exp)))
-        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((begin? exp) #?=(analyze-sequence #?=(begin-actions exp)))
         ((cond? exp) (analyze (cond->if exp)))
         ((application? exp) (analyze-application exp))
         (else
@@ -60,18 +125,33 @@
         (bproc (analyze-sequence (lambda-body exp))))
     (lambda (env) (make-procedure vars bproc env))))
 
+; Alyssa's analyze-sequence
 (define (analyze-sequence exps)
-  (define (sequentially proc1 proc2)
-    (lambda (env) (proc1 env) (proc2 env)))
-  (define (loop first-proc rest-procs)
-    (if (null? rest-procs)
-      first-proc
-      (loop (sequentially first-proc (car rest-procs))
-            (cdr rest-procs))))
+  (define (execute-sequence procs env)
+    (cond ((null? (cdr procs)) ((car procs) env))
+          (else ((car procs) env)
+                (execute-sequence (cdr procs) env))))
   (let ((procs (map analyze exps)))
     (if (null? procs)
       (error "Empty sequence -- ANALYZE"))
-    (loop (car procs) (cdr procs))))
+    #?=(lambda (env) (execute-sequence procs env))))
+
+(use slib)
+(require 'trace)
+(trace analyze-sequence)
+
+; (define (analyze-sequence exps)
+;   (define (sequentially proc1 proc2)
+;     (lambda (env) (proc1 env) (proc2 env)))
+;   (define (loop first-proc rest-procs)
+;     (if (null? rest-procs)
+;       first-proc
+;       (loop (sequentially first-proc (car rest-procs))
+;             (cdr rest-procs))))
+;   (let ((procs (map analyze exps)))
+;     (if (null? procs)
+;       (error "Empty sequence -- ANALYZE"))
+;     (loop (car procs) (cdr procs))))
 
 (define (analyze-application exp)
   (let ((pproc (analyze (operator exp)))
