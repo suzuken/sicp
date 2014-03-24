@@ -192,7 +192,47 @@
     (+ (sum (- n 1)) n)))
 (sum 100000)
 
-(define (hoge)
-  (+ 1 1))
+(define hoge (+ 1 1))
 
-(times hoge 100000)
+(define (times-hoge f n)
+  f
+  (if (= n 1)
+    f
+    (times-hoge f (- n 1))))
+
+(times-hoge hoge 100000)
+
+; ただの足し算
+; original
+; ;;; M-Eval input:
+; (times-hoge hoge 100000)
+; ;(time (eval input the-global-environment))
+; ; real   0.771
+; ; user   0.770
+; ; sys    0.000
+
+; analyzed
+; ;;; M-Eval input:
+; (times-hoge hoge 100000)
+; ;(time (eval input the-global-environment))
+; ; real   0.534
+; ; user   0.530
+; ; sys    0.000
+
+(times-hoge hoge 1000000)
+
+; original
+; ;;; M-Eval input:
+; (times-hoge hoge 1000000)
+; ;(time (eval input the-global-environment))
+; ; real   7.759
+; ; user   7.760
+; ; sys    0.000
+
+; analyzed
+; ;;; M-Eval input:
+; (times-hoge hoge 1000000)
+; ;(time (eval input the-global-environment))
+; ; real   5.353
+; ; user   5.350
+; ; sys    0.010
