@@ -148,6 +148,7 @@
                 (sequence->exp (cond-actions first))
                 (expand-clauses rest))))))
 
+(define (cond-predicate clause) (car clause))
 ; procedure
 (define primitive-procedures
  (list (list 'car car)
@@ -163,6 +164,9 @@
        (list '* *)
        (list '/ /)
        (list '= =)
+       (list '> >)
+       (list '< <)
+       (list 'mod mod)
  ))
 (define (primitive-procedure? proc)
  (tagged-list? proc 'primitive))

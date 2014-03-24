@@ -132,6 +132,8 @@
           (else ((car procs) env)
                 (execute-sequence (cdr procs) env))))
   (let ((procs (map analyze exps)))
+    ;exps ((+ 1 1) (* 1 3))
+    ;procs ((lambda (e) (+ 1 1)) (lambda (e) (* 1 3)))
     (if (null? procs)
       (error "Empty sequence -- ANALYZE"))
     #?=(lambda (env) (execute-sequence procs env))))
@@ -143,16 +145,17 @@
 ; 本文バージョン
 ; (define (analyze-sequence exps)
 ;   (define (sequentially proc1 proc2)
-;     #?=(lambda (env) (proc1 env) (proc2 env)))
+;     (lambda (env) (proc1 env) (proc2 env)))
 ;   (define (loop first-proc rest-procs)
 ;     (if (null? rest-procs)
 ;       first-proc
 ;       (loop (sequentially first-proc (car rest-procs))
 ;             (cdr rest-procs))))
 ;   (let ((procs (map analyze exps)))
+    ;;procs ((lambda (e) (+ 1 1)) (lambda (e) (* 1 3)))
 ;     (if (null? procs)
 ;       (error "Empty sequence -- ANALYZE"))
-;     (loop (car procs) (cdr procs))))
+;     #?=(loop (car procs) (cdr procs))))
 
 (define (analyze-application exp)
   (let ((pproc (analyze (operator exp)))
