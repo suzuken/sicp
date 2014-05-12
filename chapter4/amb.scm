@@ -343,6 +343,8 @@
         (list '= =)
         (list '> >)
         (list '< <)
+        (list '<= <=)
+        (list '>= >=)
         (list '#t #t)
         (list '#f #f)
         (list 'mod mod)
