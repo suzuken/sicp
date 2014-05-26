@@ -326,8 +326,10 @@
 (define primitive-procedures
   (list (list 'car car)
         (list 'cdr cdr)
+        (list 'cadr cadr)
         (list 'cons cons)
         (list 'null? null?)
+        (list 'eq? eq?)
         (list 'let let)
         (list 'list list)
         (list 'if if)
@@ -347,6 +349,7 @@
         (list '>= >=)
         (list '#t #t)
         (list '#f #f)
+        (list 'abs abs)
         (list 'mod mod)
         ))
 
