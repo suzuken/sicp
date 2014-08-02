@@ -1,6 +1,144 @@
 (define input-prompt ";;; Query input:")
 (define output-prompt ";;; Query results:")
 
+; ストリーム関連手続きを3章から STREAM<<<
+(define (stream-ref s n)
+  (if (= n 0)
+      (stream-car s)
+      (stream-ref (stream-cdr s) (- n 1))))
+
+(define (stream-map proc . argstreams)
+  (if (stream-null? (car argstreams))
+      the-empty-stream
+      (cons-stream
+       (apply proc (map stream-car argstreams))
+       (apply stream-map
+              (cons proc (map stream-cdr argstreams))))))
+
+(define (stream-for-each proc s)
+  (if (stream-null? s)
+      'done
+      (begin (proc (stream-car s))
+             (stream-for-each proc (stream-cdr s)))))
+(define (display-stream s)
+    (stream-for-each display-line s))
+(define (display-line x)
+    (newline)
+      (display x))
+
+(define-macro (cons-stream a b)
+  `(cons ,a (delay ,b)))
+(define (stream-car stream) (car stream))
+(define (stream-cdr stream) (force (cdr stream)))
+(define (force exp) (exp))
+(define the-empty-stream '())
+(define stream-null? null?)
+
+(define (memo-proc proc)
+  (let ((already-run? #f)
+        (result #f))
+    (lambda ()
+      (if (not already-run?)
+          (begin (set! result (proc))
+                 (set! already-run? #t)
+                 result)
+          result))))
+
+(define (stream-append s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (stream-append (stream-cdr s1) s2))))
+
+;; 非メモ化 delay
+; (define-macro (delay exp) `(lambda () ,exp))
+
+;; メモ化 delay
+(define-macro (delay exp) `(memo-proc (lambda () ,exp)))
+; STREAM
+
+(define (var? exp) (tagged-list? exp '?))
+(define (type exp)
+  (if (pair? exp)
+    (car exp)
+    (error "Unknown expression TYPE" exp)))
+
+(define (contents exp)
+  (if (pair? exp)
+    (cdr exp)
+    (error "Unknown expression CONTENTS" exp)))
+
+(define (assertion-to-be-added? exp)
+  (eq? (type exp) 'assert!))
+
+(define (add-assertion-body exp)
+  (car (contents exp)))
+
+(define (empty-conjunction? exps) (null? exps))
+(define (first-conjunct exps) (car exps))
+(define (rest-conjncts exps) (cdr exps))
+
+(define (empty-disjunctions? exps) (null? exps))
+(define (first-disjunct exps) (car exps))
+(define (rest-disjuncts exps) (cdr exps))
+
+(define (negated-query exps) (car exps))
+(define (predicate exps) (car exps))
+(define (args exps) (cdr exps))
+
+(define (rule? statement)
+  (tagged-list? statement 'rule))
+(define (conclusion rule) (cadr rule))
+(define (rule-body rule)
+  (if (null? (cddr rule))
+    '(always-true)
+    (caddr rule)))
+
+(define (query-syntax-process exp)
+  (map-over-symbols expand-question-mark exp))
+(define (map-over-symbols proc exp)
+  (cond ((pair? exp)
+         (cons (map-over-symbols proc (car exp))
+               (map-over-symbols proc (cdr exp))))
+        ((symbol? exp) (proc exp))
+        (else exp)))
+(define (expand-question-mark symbol)
+  (let ((chars (symbol->string symbol)))
+    (if (string=? (substring chars 0 1) "?")
+      (list '?
+            (string->symbol
+              (substring chars 1 (string-length chars))))
+      symbol)))
+
+(define (constant-symbol? exp) (symbol? exp))
+
+(define rule-counter 0)
+(define (new-rule-application-id)
+  (set! rule-counter (+ 1 rule-counter))
+  rule-counter)
+(define (make-new-variable var rule-application-id)
+  (cons '? (cons rule-application-id (cdr var))))
+(define (contract-question-mark variable)
+  (string->symbol
+    (string-append "?"
+                   (if (number? (cadr variable))
+                     (string-append (symbol->string (caddr variable))
+                                    "-"
+                                    (number->string (cadr variable)))
+                     (symbol->string (cadr variable))))))
+
+; 4.4.4.8
+(define (make-binding variable value)
+  (cons variable value))
+(define (binding-variable binding)
+  (car binding))
+(define (binding-value binding)
+  (cdr binding))
+(define (binding-in-frame variable frame)
+  (assoc variable frame))
+(define (extend variable value frame)
+  (cons (make-binding variable value) frame))
+
 (define (query-driver-loop)
   (prompt-for-input input-prompt)
   (let ((q (query-syntax-process (read))))
@@ -34,6 +172,44 @@
           (else exp)))
   (copy exp))
 
+; EOF <<< 3.3より、駆動表を抜粋
+(define (make-table)
+  (let ((local-table (list '*table*)))
+    (define (lookup key-1 key-2)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (cdr record)
+                  #f))
+            #f)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (set-cdr! record value)
+                  (set-cdr! subtable
+                            (cons (cons key-2 value)
+                                  (cdr subtable)))))
+            (set-cdr! local-table
+                      (cons (list key-1
+                                  (cons key-2 value))
+                            (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+            ((eq? m 'insert-proc!) insert!)
+            (else (error "Unknown operation -- TABLE" m))))
+    dispatch))
+
+(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc!))
+; EOF;
+
+; getは2章でやったときのデータ主導振り分けに準ずる
+; http://sicp.iijlab.net/fulltext/x243.html
 (define (qeval query frame-stream)
   (let ((qproc (get (type query) 'qeval)))
     (if qproc
@@ -56,7 +232,7 @@
              (qeval (first-conjunct conjuncts)
                     frame-stream))))
 
-; (put 'and 'qeval conjoin)
+(put 'and 'qeval conjoin)
 
 (define (disjoin disjuncts frame-stream)
   (if (empty-disjunction? disjuncts)
@@ -66,7 +242,7 @@
       (delay (disjoin (rest-disjuncts disjuncts)
                       frame-stream)))))
 
-; (put 'and 'qeval disjoin)
+(put 'and 'qeval disjoin)
 
 (define (negate operands frame-stream)
   (stream-flatmap
@@ -77,7 +253,7 @@
         the-empty-stream))
     frame-stream))
 
-; (put 'not 'qeval negate)
+(put 'not 'qeval negate)
 
 (define (lisp-value call frame-stream)
   (stream-flatmap
@@ -92,7 +268,7 @@
         the-empty-stream))
     frame-stream))
 
-; (put 'lisp-value 'qeval lisp-value)
+(put 'lisp-value 'qeval lisp-value)
 
 ; 述語を引数に左右させる。基盤となるLispのeval / applyを利用している
 (define (execute exp)
@@ -136,7 +312,7 @@
 
 (define (apply-rules pattern frame)
   (stream-flatmap (lambda (rule)
-                    (apply-a-rule rule pater nframe))
+                    (apply-a-rule rule pattern frame))
                   (fetch-rules pattern frame)))
 
 (define (apply-a-rule rule query-pattern query-frame)
@@ -145,7 +321,7 @@
             (unify-match query-pattern
                          (conclusion clean-rule)
                          query-frame)))
-      (if (eq? unify-reuslt 'failed)
+      (if (eq? unify-result 'failed)
         the-empty-stream
         (qeval (rule-body clean-rule)
                (singleton-stream unify-result))))))
@@ -181,7 +357,7 @@
             (unify-match
               (binding-value binding) val frame))
           ((var? val)
-           (let ((bindiing (binidng-in-frame val frame)))
+           (let ((binding (binding-in-frame val frame)))
              (if binding
                (unify-match
                  var (binding-value binding) frame)
@@ -194,15 +370,15 @@
   (define (tree-walk e)
     (cond ((var? e)
            (if (equal? var e)
-             true
+             #t
              (let ((b (binding-in-frame e frame)))
                (if b
                  (tree-walk (binding-value b))
-                 false))))
+                 #f))))
           ((pair? e)
            (or (tree-walk (car e))
                (tree-walk (cdr e))))
-          (else false)))
+          (else #f)))
   (tree-walk exp))
 
 (define THE-ASSERTIONS the-empty-stream)
@@ -225,7 +401,7 @@
 
 (define (fetch-rules pattern frame)
   (if (use-index? pattern)
-    (get-indxed-rules pattern)
+    (get-indexed-rules pattern)
     (get-all-rules)))
 
 (define (get-all-rules) THE-RULES)
@@ -255,7 +431,7 @@
 
 (define (store-assertion-in-index assertion)
   (if (indexable? assertion)
-    (let ((key (idnex-key-of assertion)))
+    (let ((key (index-key-of assertion)))
       (let ((current-assertion-stream
               (get-stream key 'assertion-stream)))
         (put key
@@ -267,12 +443,12 @@
   (let ((pattern (conclusion rule)))
     (if (indexable? pattern)
       (let ((key (index-key-of pattern)))
-        (let (current-rule-stream
+        (let ((current-rule-stream
                (get-stream key 'rule-stream)))
         (put key
              'rule-stream
              (cons-stream rule
-                          current-rule-stream))))))
+                          current-rule-stream)))))))
 
 (define (indexable? pat)
   (or (constant-symbol? (car pat))
@@ -287,7 +463,7 @@
 
 ; q4.70
 
-(define (stream-apend-delayed s1 delayed-s2)
+(define (stream-append-delayed s1 delayed-s2)
   (if (stream-null? s1)
     (force delayed-s2)
     (cons-stream
@@ -317,84 +493,23 @@
 
 ; 4.4.4.7
 
-(define (type exp)
+; 以下4.1より
+(define (prompt-for-input string)
+  (newline) (newline) (display string) (newline))
+
+(define (announce-output string)
+  (newline) (display string) (newline))
+
+(define (user-print object)
+  (if (compound-procedure? object)
+    (display (list 'compound-procedure
+                   (procedure-parameters object)
+                   (procedure-body object)
+                   '<procedure-env>))
+    (display object)))
+
+(define (tagged-list? exp tag)
   (if (pair? exp)
-    (car exp)
-    (error "Unknown expression TYPE" exp)))
+    (eq? (car exp) tag)
+    #f))
 
-(define (contents exp)
-  (if (pair? exp)
-    (cdr exp)
-    (error "Unknown expression CONTENTS" exp)))
-
-(define (assertion-to-be-added? exp)
-  (eq? (type exp) 'assert!))
-
-(define (add-assertion-body exp)
-  (car (contents exp)))
-
-(define (empty-conjunction? exps) (null? exps))
-(define (first-conjunct exps) (car exps))
-(define (rest-conjncts exps) (cdr exps))
-
-(define (empty-disjunctions? exps) (null? exps))
-(define (first-disjunct exps) (car exps))
-(define (rest-disjuncts exps) (cdr exps))
-
-(define (negated-query exps) (car exps))
-(define (predicate exps) (car exps))
-(define (args exps) (cdr exps))
-
-(define (rule? statement)
-  (tagged-list? statement 'rule))
-(define (conclusion rule) (cadr rule))
-(define (rule-body rule)
-  (if (null? (cddr rule))
-    '(always-true)
-    (caddr rule)))
-
-(define (query-syntax-process exp)
-  (map-over-symbols expand-quesion-mark exp))
-(define (map-over-symbols proc exp)
-  (cond ((pair/ exp)
-         (cons (map-over-symbols proc (car exp))
-               (map-over-symbols proc (cdr exp))))
-        ((symbol? exp) (proc exp))
-        (else exp)))
-(define (expand-quesion-mark symbol)
-  (let ((chars (symbol->string symbol)))
-    (if (string=? (substring chars 0 1) "?")
-      (list '?
-            (string->symbol
-              (substring chars 1 (string-length chars))))
-      symbol)))
-
-(define (var? exp) (tagged-list? exp '?))
-(define (constant-symbol? exp) (symbol? exp))
-
-(define rule-counter 0)
-(define (new-rule-applicatin-id)
-  (set! rule-counter (+ 1 rule-counter))
-  rule-counter)
-(define (make-new-variable var rule-application-id)
-  (cons '? (cons rule-application-id (cdr var))))
-(define (contract-quesion-mark variable)
-  (string->symbol
-    (string-append "?"
-                   (if (number? (cadr variable))
-                     (string-append (symbol->string (caddr variable))
-                                    "-"
-                                    (number->string (cadr variable)))
-                     (symbol->string (cadr variable))))))
-
-; 4.4.4.8
-(define (make-binding variable value)
-  (cons variable value))
-(define (binding-variable binding)
-  (car binding))
-(define (binding-value binding)
-  (cdr binding))
-(define (binding-in-frame variable frame)
-  (assoc variable frame))
-(define (extend variable value frame)
-  (cons (make-binding variable value) frame))
