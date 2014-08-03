@@ -1,7 +1,48 @@
 (define input-prompt ";;; Query input:")
 (define output-prompt ";;; Query results:")
+; (use slib)
+(use util.stream)
 
-; ストリーム関連手続きを3章から STREAM<<<
+; reference: mitpress.mit.edu/sicp/code/ch4-query.scm
+
+; DBを読み込むにはREPLで
+; (initialize-data-base microshaft-data-base)
+
+;; gauche環境でstreamを扱うためのstream.scm
+;; http://d.hatena.ne.jp/rucifer_hacker/20090127/1233037207
+(define (memo-proc proc)
+  (let ((already-run? #f)
+        (result #f))
+    (lambda ()
+      (if (not already-run?)
+          (begin (set! result (proc))
+                 (set! already-run? #t)
+                 result)
+          result))))
+
+;; 非メモ化 delay
+(define-macro (delay exp) `(lambda () ,exp))
+
+;; メモ化 delay
+(define-macro (delay exp) `(memo-proc (lambda () ,exp)))
+
+(define (force exp) (exp))
+
+(define the-empty-stream '())
+
+(define stream-null? null?)
+
+(define-macro (cons-stream a b)
+  `(cons ,a (delay ,b)))
+
+(define (stream-car stream)
+  (car stream))
+
+(define (stream-cdr stream)
+  (force (cdr stream)))
+
+;;;;
+
 (define (stream-ref s n)
   (if (= n 0)
       (stream-car s)
@@ -15,34 +56,44 @@
        (apply stream-map
               (cons proc (map stream-cdr argstreams))))))
 
+
 (define (stream-for-each proc s)
   (if (stream-null? s)
       'done
       (begin (proc (stream-car s))
              (stream-for-each proc (stream-cdr s)))))
+
 (define (display-stream s)
-    (stream-for-each display-line s))
+  (stream-for-each display-line s))
+
 (define (display-line x)
-    (newline)
-      (display x))
+  (newline)
+  (display x))
 
-(define-macro (cons-stream a b)
-  `(cons ,a (delay ,b)))
-(define (stream-car stream) (car stream))
-(define (stream-cdr stream) (force (cdr stream)))
-(define (force exp) (exp))
-(define the-empty-stream '())
-(define stream-null? null?)
+;;;;
 
-(define (memo-proc proc)
-  (let ((already-run? #f)
-        (result #f))
-    (lambda ()
-      (if (not already-run?)
-          (begin (set! result (proc))
-                 (set! already-run? #t)
-                 result)
-          result))))
+(define (stream-enumerate-interval low high)
+  (if (> low high)
+      the-empty-stream
+      (cons-stream
+       low
+       (stream-enumerate-interval (+ low 1) high))))
+
+(define (stream-filter pred stream)
+  (cond ((stream-null? stream) the-empty-stream)
+        ((pred (stream-car stream))
+         (cons-stream (stream-car stream)
+                      (stream-filter pred
+                                     (stream-cdr stream))))
+        (else (stream-filter pred (stream-cdr stream)))))
+
+(define (show-stream s n)
+  (if (= n 0)
+      (newline)
+      (begin
+        (display " ")
+        (display (stream-car s))
+        (show-stream (stream-cdr s) (- n 1)))))
 
 (define (stream-append s1 s2)
   (if (stream-null? s1)
@@ -50,12 +101,7 @@
       (cons-stream (stream-car s1)
                    (stream-append (stream-cdr s1) s2))))
 
-;; 非メモ化 delay
-; (define-macro (delay exp) `(lambda () ,exp))
-
-;; メモ化 delay
-(define-macro (delay exp) `(memo-proc (lambda () ,exp)))
-; STREAM
+; ここまでstream
 
 (define (var? exp) (tagged-list? exp '?))
 (define (type exp)
@@ -76,7 +122,7 @@
 
 (define (empty-conjunction? exps) (null? exps))
 (define (first-conjunct exps) (car exps))
-(define (rest-conjncts exps) (cdr exps))
+(define (rest-conjuncts exps) (cdr exps))
 
 (define (empty-disjunctions? exps) (null? exps))
 (define (first-disjunct exps) (car exps))
@@ -168,44 +214,10 @@
                (copy (binding-value binding))
                (unbound-var-handler exp frame))))
           ((pair? exp)
-           (cons (copy (car exp)) (copu (cdr exp))))
+           (cons (copy (car exp)) (copy (cdr exp))))
           (else exp)))
   (copy exp))
 
-; EOF <<< 3.3より、駆動表を抜粋
-(define (make-table)
-  (let ((local-table (list '*table*)))
-    (define (lookup key-1 key-2)
-      (let ((subtable (assoc key-1 (cdr local-table))))
-        (if subtable
-            (let ((record (assoc key-2 (cdr subtable))))
-              (if record
-                  (cdr record)
-                  #f))
-            #f)))
-    (define (insert! key-1 key-2 value)
-      (let ((subtable (assoc key-1 (cdr local-table))))
-        (if subtable
-            (let ((record (assoc key-2 (cdr subtable))))
-              (if record
-                  (set-cdr! record value)
-                  (set-cdr! subtable
-                            (cons (cons key-2 value)
-                                  (cdr subtable)))))
-            (set-cdr! local-table
-                      (cons (list key-1
-                                  (cons key-2 value))
-                            (cdr local-table)))))
-      'ok)
-    (define (dispatch m)
-      (cond ((eq? m 'lookup-proc) lookup)
-            ((eq? m 'insert-proc!) insert!)
-            (else (error "Unknown operation -- TABLE" m))))
-    dispatch))
-
-(define operation-table (make-table))
-(define get (operation-table 'lookup-proc))
-(define put (operation-table 'insert-proc!))
 ; EOF;
 
 ; getは2章でやったときのデータ主導振り分けに準ずる
@@ -226,13 +238,13 @@
 
 ; 合成質問
 (define (conjoin conjuncts frame-stream)
-  (if (empty-conjuction? conjuncts)
+  (if (empty-conjunction? conjuncts)
     frame-stream
     (conjoin (rest-conjuncts conjuncts)
              (qeval (first-conjunct conjuncts)
                     frame-stream))))
 
-(put 'and 'qeval conjoin)
+; (put 'and 'qeval conjoin)
 
 (define (disjoin disjuncts frame-stream)
   (if (empty-disjunction? disjuncts)
@@ -242,7 +254,7 @@
       (delay (disjoin (rest-disjuncts disjuncts)
                       frame-stream)))))
 
-(put 'and 'qeval disjoin)
+; (put 'and 'qeval disjoin)
 
 (define (negate operands frame-stream)
   (stream-flatmap
@@ -253,7 +265,7 @@
         the-empty-stream))
     frame-stream))
 
-(put 'not 'qeval negate)
+; (put 'not 'qeval negate)
 
 (define (lisp-value call frame-stream)
   (stream-flatmap
@@ -268,7 +280,7 @@
         the-empty-stream))
     frame-stream))
 
-(put 'lisp-value 'qeval lisp-value)
+; (put 'lisp-value 'qeval lisp-value)
 
 ; 述語を引数に左右させる。基盤となるLispのeval / applyを利用している
 (define (execute exp)
@@ -277,7 +289,7 @@
 
 (define (always-true ignore frame-stream) frame-stream)
 
-(put 'always-true 'qeval always-true)
+; (put 'always-true 'qeval always-true)
 
 ; pattern match
 (define (find-assertions pattern frame)
@@ -512,4 +524,141 @@
   (if (pair? exp)
     (eq? (car exp) tag)
     #f))
+
+; EOF <<< 3.3より、駆動表を抜粋
+(define (make-table)
+  (let ((local-table (list '*table*)))
+    (define (lookup key-1 key-2)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (cdr record)
+                  #f))
+            #f)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (set-cdr! record value)
+                  (set-cdr! subtable
+                            (cons (cons key-2 value)
+                                  (cdr subtable)))))
+            (set-cdr! local-table
+                      (cons (list key-1
+                                  (cons key-2 value))
+                            (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+            ((eq? m 'insert-proc!) insert!)
+            (else (error "Unknown operation -- TABLE" m))))
+    dispatch))
+
+(define get '())
+
+(define put '())
+
+(define (initialize-data-base rules-and-assertions)
+  (define (deal-out r-and-a rules assertions)
+    (cond ((null? r-and-a)
+           (set! THE-ASSERTIONS (list->stream assertions))
+           (set! THE-RULES (list->stream rules))
+           'done)
+          (else
+           (let ((s (query-syntax-process (car r-and-a))))
+             (cond ((rule? s)
+                    (store-rule-in-index s)
+                    (deal-out (cdr r-and-a)
+                              (cons s rules)
+                              assertions))
+                   (else
+                    (store-assertion-in-index s)
+                    (deal-out (cdr r-and-a)
+                              rules
+                              (cons s assertions))))))))
+  (let ((operation-table (make-table)))
+    (set! get (operation-table 'lookup-proc))
+    (set! put (operation-table 'insert-proc!)))
+  (put 'and 'qeval conjoin)
+  (put 'or 'qeval disjoin)
+  (put 'not 'qeval negate)
+  (put 'lisp-value 'qeval lisp-value)
+  (put 'always-true 'qeval always-true)
+  (deal-out rules-and-assertions '() '()))
+
+(define microshaft-data-base
+  '(
+;; from section 4.4.1
+(address (Bitdiddle Ben) (Slumerville (Ridge Road) 10))
+(job (Bitdiddle Ben) (computer wizard))
+(salary (Bitdiddle Ben) 60000)
+
+(address (Hacker Alyssa P) (Cambridge (Mass Ave) 78))
+(job (Hacker Alyssa P) (computer programmer))
+(salary (Hacker Alyssa P) 40000)
+(supervisor (Hacker Alyssa P) (Bitdiddle Ben))
+
+(address (Fect Cy D) (Cambridge (Ames Street) 3))
+(job (Fect Cy D) (computer programmer))
+(salary (Fect Cy D) 35000)
+(supervisor (Fect Cy D) (Bitdiddle Ben))
+
+(address (Tweakit Lem E) (Boston (Bay State Road) 22))
+(job (Tweakit Lem E) (computer technician))
+(salary (Tweakit Lem E) 25000)
+(supervisor (Tweakit Lem E) (Bitdiddle Ben))
+
+(address (Reasoner Louis) (Slumerville (Pine Tree Road) 80))
+(job (Reasoner Louis) (computer programmer trainee))
+(salary (Reasoner Louis) 30000)
+(supervisor (Reasoner Louis) (Hacker Alyssa P))
+
+(supervisor (Bitdiddle Ben) (Warbucks Oliver))
+
+(address (Warbucks Oliver) (Swellesley (Top Heap Road)))
+(job (Warbucks Oliver) (administration big wheel))
+(salary (Warbucks Oliver) 150000)
+
+(address (Scrooge Eben) (Weston (Shady Lane) 10))
+(job (Scrooge Eben) (accounting chief accountant))
+(salary (Scrooge Eben) 75000)
+(supervisor (Scrooge Eben) (Warbucks Oliver))
+
+(address (Cratchet Robert) (Allston (N Harvard Street) 16))
+(job (Cratchet Robert) (accounting scrivener))
+(salary (Cratchet Robert) 18000)
+(supervisor (Cratchet Robert) (Scrooge Eben))
+
+(address (Aull DeWitt) (Slumerville (Onion Square) 5))
+(job (Aull DeWitt) (administration secretary))
+(salary (Aull DeWitt) 25000)
+(supervisor (Aull DeWitt) (Warbucks Oliver))
+
+(can-do-job (computer wizard) (computer programmer))
+(can-do-job (computer wizard) (computer technician))
+
+(can-do-job (computer programmer)
+            (computer programmer trainee))
+
+(can-do-job (administration secretary)
+            (administration big wheel))
+
+(rule (lives-near ?person-1 ?person-2)
+      (and (address ?person-1 (?town . ?rest-1))
+           (address ?person-2 (?town . ?rest-2))
+           (not (same ?person-1 ?person-2))))
+
+(rule (same ?x ?x))
+
+(rule (wheel ?person)
+      (and (supervisor ?middle-manager ?person)
+           (supervisor ?x ?middle-manager)))
+
+(rule (outranked-by ?staff-person ?boss)
+      (or (supervisor ?staff-person ?boss)
+          (and (supervisor ?staff-person ?middle-manager)
+               (outranked-by ?middle-manager ?boss))))
+))
 
