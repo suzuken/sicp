@@ -5,9 +5,6 @@
 
 ; reference: mitpress.mit.edu/sicp/code/ch4-query.scm
 
-; DBを読み込むにはREPLで
-; (initialize-data-base microshaft-data-base)
-
 ;; gauche環境でstreamを扱うためのstream.scm
 ;; http://d.hatena.ne.jp/rucifer_hacker/20090127/1233037207
 ;;
@@ -286,7 +283,9 @@
 
 ; 述語を引数に左右させる。基盤となるLispのeval / applyを利用している
 (define (execute exp)
-  (apply (eval (predicate exp) user-initial-environment)
+  (apply (eval (predicate exp) 
+               ; user-initial-environment)
+               (interaction-environment)) ; only for gauche. ref: http://practical-scheme.net/wiliki/wiliki.cgi?Gauche:evalと環境
          (args exp)))
 
 (define (always-true ignore frame-stream) frame-stream)
@@ -562,7 +561,7 @@
 (define put (operation-table 'insert-proc!))
 
 (put 'and 'qeval conjoin)
-(put 'and 'qeval disjoin)
+(put 'or 'qeval disjoin)
 (put 'not 'qeval negate)
 (put 'lisp-value 'qeval lisp-value)
 (put 'always-true 'qeval always-true)
