@@ -1,3 +1,5 @@
 (load "./query.scm")
-(initialize-data-base microshaft-data-base)
+; (use slib)
+; (require 'trace)
+; (trace instantiate)
 (query-driver-loop)
