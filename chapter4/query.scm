@@ -1,5 +1,192 @@
 (define input-prompt ";;; Query input:")
 (define output-prompt ";;; Query results:")
+; (use slib)
+; (use util.stream)
+
+; reference: mitpress.mit.edu/sicp/code/ch4-query.scm
+
+;; gauche環境でstreamを扱うためのstream.scm
+;; http://d.hatena.ne.jp/rucifer_hacker/20090127/1233037207
+;;
+(define (memo-proc proc)
+  (let ((already-run? #f)
+        (result #f))
+    (lambda ()
+      (if (not already-run?)
+          (begin (set! result (proc))
+                 (set! already-run? #t)
+                 result)
+          result))))
+
+;; 非メモ化 delay
+(define-macro (delay exp) `(lambda () ,exp))
+
+;; メモ化 delay
+(define-macro (delay exp) `(memo-proc (lambda () ,exp)))
+
+(define (force exp) (exp))
+
+(define the-empty-stream '())
+
+(define stream-null? null?)
+
+(define-macro (cons-stream a b)
+  `(cons ,a (delay ,b)))
+
+(define (stream-car stream)
+  (car stream))
+
+(define (stream-cdr stream)
+  (force (cdr stream)))
+
+(define (stream-ref s n)
+  (if (= n 0)
+      (stream-car s)
+      (stream-ref (stream-cdr s) (- n 1))))
+
+(define (stream-map proc . argstreams)
+  (if (stream-null? (car argstreams))
+      the-empty-stream
+      (cons-stream
+       (apply proc (map stream-car argstreams))
+       (apply stream-map
+              (cons proc (map stream-cdr argstreams))))))
+
+(define (stream-for-each proc s)
+  (if (stream-null? s)
+      'done
+      (begin (proc (stream-car s))
+             (stream-for-each proc (stream-cdr s)))))
+
+(define (display-stream s)
+  (stream-for-each display-line s))
+
+(define (display-line x)
+  (newline)
+  (display x))
+
+(define (write-stream stream :optional
+                      (port (current-output-port)) (writer write-char))
+  (let loop ((s stream))
+    (unless (stream-null? s)
+      (writer (stream-car s) port)
+      (loop (stream-cdr s)))))
+
+
+;;;;
+
+(define (stream-enumerate-interval low high)
+  (if (> low high)
+      the-empty-stream
+      (cons-stream
+       low
+       (stream-enumerate-interval (+ low 1) high))))
+
+(define (stream-filter pred stream)
+  (cond ((stream-null? stream) the-empty-stream)
+        ((pred (stream-car stream))
+         (cons-stream (stream-car stream)
+                      (stream-filter pred
+                                     (stream-cdr stream))))
+        (else (stream-filter pred (stream-cdr stream)))))
+
+(define (show-stream s n)
+  (if (= n 0)
+      (newline)
+      (begin
+        (display " ")
+        (display (stream-car s))
+        (show-stream (stream-cdr s) (- n 1)))))
+
+(define (stream-append s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (stream-append (stream-cdr s1) s2))))
+
+; ここまでstream
+
+(define (var? exp) (tagged-list? exp '?))
+(define (type exp)
+  (if (pair? exp)
+    (car exp)
+    (error "Unknown expression TYPE" exp)))
+
+(define (contents exp)
+  (if (pair? exp)
+    (cdr exp)
+    (error "Unknown expression CONTENTS" exp)))
+
+(define (assertion-to-be-added? exp)
+  (eq? (type exp) 'assert!))
+
+(define (add-assertion-body exp)
+  (car (contents exp)))
+
+(define (empty-conjunction? exps) (null? exps))
+(define (first-conjunct exps) (car exps))
+(define (rest-conjuncts exps) (cdr exps))
+
+(define (empty-disjunction? exps) (null? exps))
+(define (first-disjunct exps) (car exps))
+(define (rest-disjuncts exps) (cdr exps))
+
+(define (negated-query exps) (car exps))
+(define (predicate exps) (car exps))
+(define (args exps) (cdr exps))
+
+(define (rule? statement)
+  (tagged-list? statement 'rule))
+(define (conclusion rule) (cadr rule))
+(define (rule-body rule)
+  (if (null? (cddr rule))
+    '(always-true)
+    (caddr rule)))
+
+(define (query-syntax-process exp)
+  (map-over-symbols expand-question-mark exp))
+(define (map-over-symbols proc exp)
+  (cond ((pair? exp)
+         (cons (map-over-symbols proc (car exp))
+               (map-over-symbols proc (cdr exp))))
+        ((symbol? exp) (proc exp))
+        (else exp)))
+(define (expand-question-mark symbol)
+  (let ((chars (symbol->string symbol)))
+    (if (string=? (substring chars 0 1) "?")
+      (list '?
+            (string->symbol
+              (substring chars 1 (string-length chars))))
+      symbol)))
+
+(define (constant-symbol? exp) (symbol? exp))
+
+(define rule-counter 0)
+(define (new-rule-application-id)
+  (set! rule-counter (+ 1 rule-counter))
+  rule-counter)
+(define (make-new-variable var rule-application-id)
+  (cons '? (cons rule-application-id (cdr var))))
+(define (contract-question-mark variable)
+  (string->symbol
+    (string-append "?"
+                   (if (number? (cadr variable))
+                     (string-append (symbol->string (caddr variable))
+                                    "-"
+                                    (number->string (cadr variable)))
+                     (symbol->string (cadr variable))))))
+
+; 4.4.4.8
+(define (make-binding variable value)
+  (cons variable value))
+(define (binding-variable binding)
+  (car binding))
+(define (binding-value binding)
+  (cdr binding))
+(define (binding-in-frame variable frame)
+  (assoc variable frame))
+(define (extend variable value frame)
+  (cons (make-binding variable value) frame))
 
 (define (query-driver-loop)
   (prompt-for-input input-prompt)
@@ -30,10 +217,14 @@
                (copy (binding-value binding))
                (unbound-var-handler exp frame))))
           ((pair? exp)
-           (cons (copy (car exp)) (copu (cdr exp))))
+           (cons (copy (car exp)) (copy (cdr exp))))
           (else exp)))
   (copy exp))
 
+; EOF;
+
+; getは2章でやったときのデータ主導振り分けに準ずる
+; http://sicp.iijlab.net/fulltext/x243.html
 (define (qeval query frame-stream)
   (let ((qproc (get (type query) 'qeval)))
     (if qproc
@@ -50,13 +241,12 @@
 
 ; 合成質問
 (define (conjoin conjuncts frame-stream)
-  (if (empty-conjuction? conjuncts)
+  (if (empty-conjunction? conjuncts)
     frame-stream
     (conjoin (rest-conjuncts conjuncts)
              (qeval (first-conjunct conjuncts)
                     frame-stream))))
 
-; (put 'and 'qeval conjoin)
 
 (define (disjoin disjuncts frame-stream)
   (if (empty-disjunction? disjuncts)
@@ -66,7 +256,6 @@
       (delay (disjoin (rest-disjuncts disjuncts)
                       frame-stream)))))
 
-; (put 'and 'qeval disjoin)
 
 (define (negate operands frame-stream)
   (stream-flatmap
@@ -77,7 +266,6 @@
         the-empty-stream))
     frame-stream))
 
-; (put 'not 'qeval negate)
 
 (define (lisp-value call frame-stream)
   (stream-flatmap
@@ -92,16 +280,16 @@
         the-empty-stream))
     frame-stream))
 
-; (put 'lisp-value 'qeval lisp-value)
 
 ; 述語を引数に左右させる。基盤となるLispのeval / applyを利用している
 (define (execute exp)
-  (apply (eval (predicate exp) user-initial-environment)
+  (apply (eval (predicate exp) 
+               ; user-initial-environment)
+               (interaction-environment)) ; only for gauche. ref: http://practical-scheme.net/wiliki/wiliki.cgi?Gauche:evalと環境
          (args exp)))
 
 (define (always-true ignore frame-stream) frame-stream)
 
-(put 'always-true 'qeval always-true)
 
 ; pattern match
 (define (find-assertions pattern frame)
@@ -122,7 +310,7 @@
         ((var? pat) (extend-if-consistent pat dat frame))
         ((and (pair? pat) (pair? dat))
          (pattern-match (cdr pat)
-                        (cdr pat)
+                        (cdr dat)
                         (pattern-match (car pat)
                                        (car dat)
                                        frame)))
@@ -131,12 +319,12 @@
 (define (extend-if-consistent var dat frame)
   (let ((binding (binding-in-frame var frame)))
     (if binding
-      (patttern-match (binding-value binding) dat frame)
+      (pattern-match (binding-value binding) dat frame)
       (extend var dat frame))))
 
 (define (apply-rules pattern frame)
   (stream-flatmap (lambda (rule)
-                    (apply-a-rule rule pater nframe))
+                    (apply-a-rule rule pattern frame))
                   (fetch-rules pattern frame)))
 
 (define (apply-a-rule rule query-pattern query-frame)
@@ -145,7 +333,7 @@
             (unify-match query-pattern
                          (conclusion clean-rule)
                          query-frame)))
-      (if (eq? unify-reuslt 'failed)
+      (if (eq? unify-result 'failed)
         the-empty-stream
         (qeval (rule-body clean-rule)
                (singleton-stream unify-result))))))
@@ -181,7 +369,7 @@
             (unify-match
               (binding-value binding) val frame))
           ((var? val)
-           (let ((bindiing (binidng-in-frame val frame)))
+           (let ((binding (binding-in-frame val frame)))
              (if binding
                (unify-match
                  var (binding-value binding) frame)
@@ -194,15 +382,15 @@
   (define (tree-walk e)
     (cond ((var? e)
            (if (equal? var e)
-             true
+             #t
              (let ((b (binding-in-frame e frame)))
                (if b
                  (tree-walk (binding-value b))
-                 false))))
+                 #f))))
           ((pair? e)
            (or (tree-walk (car e))
                (tree-walk (cdr e))))
-          (else false)))
+          (else #f)))
   (tree-walk exp))
 
 (define THE-ASSERTIONS the-empty-stream)
@@ -225,7 +413,7 @@
 
 (define (fetch-rules pattern frame)
   (if (use-index? pattern)
-    (get-indxed-rules pattern)
+    (get-indexed-rules pattern)
     (get-all-rules)))
 
 (define (get-all-rules) THE-RULES)
@@ -253,5 +441,127 @@
      (set! THE-RULES (cons-stream rule old-rules))
      'ok))
 
-; 途中
+(define (store-assertion-in-index assertion)
+  (if (indexable? assertion)
+    (let ((key (index-key-of assertion)))
+      (let ((current-assertion-stream
+              (get-stream key 'assertion-stream)))
+        (put key
+             'assertion-stream
+             (cons-stream assertion
+                          current-assertion-stream))))))
 
+(define (store-rule-in-index rule)
+  (let ((pattern (conclusion rule)))
+    (if (indexable? pattern)
+      (let ((key (index-key-of pattern)))
+        (let ((current-rule-stream
+               (get-stream key 'rule-stream)))
+        (put key
+             'rule-stream
+             (cons-stream rule
+                          current-rule-stream)))))))
+
+(define (indexable? pat)
+  (or (constant-symbol? (car pat))
+      (var? (car pat))))
+
+(define (index-key-of pat)
+  (let ((key (car pat)))
+    (if (var? key) '? key)))
+
+(define (use-index? pat)
+  (constant-symbol? (car pat)))
+
+; q4.70
+
+(define (stream-append-delayed s1 delayed-s2)
+  (if (stream-null? s1)
+    (force delayed-s2)
+    (cons-stream
+      (stream-car s1)
+      (stream-append-delayed (stream-cdr s1) delayed-s2))))
+
+(define (interleave-delayed s1 delayed-s2)
+  (if (stream-null? s1)
+    (force delayed-s2)
+    (cons-stream
+      (stream-car s1)
+      (interleave-delayed (force delayed-s2)
+                          (delay (stream-cdr s1))))))
+
+(define (stream-flatmap proc s)
+  (flatten-stream (stream-map proc s)))
+
+(define (flatten-stream stream)
+  (if (stream-null? stream)
+    the-empty-stream
+    (interleave-delayed
+      (stream-car stream)
+      (delay (flatten-stream (stream-cdr stream))))))
+
+(define (singleton-stream x)
+  (cons-stream x the-empty-stream))
+
+; 4.4.4.7
+
+; 以下4.1より
+(define (prompt-for-input string)
+  (newline) (newline) (display string) (newline))
+
+(define (announce-output string)
+  (newline) (display string) (newline))
+
+(define (user-print object)
+  (if (compound-procedure? object)
+    (display (list 'compound-procedure
+                   (procedure-parameters object)
+                   (procedure-body object)
+                   '<procedure-env>))
+    (display object)))
+
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+    (eq? (car exp) tag)
+    #f))
+
+; EOF <<< 3.3より、駆動表を抜粋
+(define (make-table)
+  (let ((local-table (list '*table*)))
+    (define (lookup key-1 key-2)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (cdr record)
+                  #f))
+            #f)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (set-cdr! record value)
+                  (set-cdr! subtable
+                            (cons (cons key-2 value)
+                                  (cdr subtable)))))
+            (set-cdr! local-table
+                      (cons (list key-1
+                                  (cons key-2 value))
+                            (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+            ((eq? m 'insert-proc!) insert!)
+            (else (error "Unknown operation -- TABLE" m))))
+    dispatch))
+
+(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc!))
+
+(put 'and 'qeval conjoin)
+(put 'or 'qeval disjoin)
+(put 'not 'qeval negate)
+(put 'lisp-value 'qeval lisp-value)
+(put 'always-true 'qeval always-true)
