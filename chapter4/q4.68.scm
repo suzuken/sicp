@@ -20,3 +20,17 @@
       (and (reverse ?y ?reversed)
            (append-to-form ?reversed (?x) ?y)))
 
+(assert! (rule (append-to-form () ?y ?y)))
+(assert! (rule (append-to-form (?u . ?v) ?y (?u . ?z))
+      (append-to-form ?v ?y ?z)))
+
+(reverse (1 2 3) ?z)
+(1 reverse (2 3))
+(3 2 1)
+
+(assert! (rule (reverse () ())))
+(assert! (rule (reverse (?x . ?y) ?z)
+      (and (reverse ?y ?reversed)
+           (append-to-form ?reversed (?x) ?z))))
+
+(reverse (1 2 3) ?x)
