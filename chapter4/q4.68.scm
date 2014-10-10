@@ -34,3 +34,4 @@
            (append-to-form ?reversed (?x) ?z))))
 
 (reverse (1 2 3) ?x)
+(reverse ?x (1 2 3))

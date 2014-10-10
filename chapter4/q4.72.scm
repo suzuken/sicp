@@ -5,3 +5,9 @@
 ; streamをinterleaveにしているのは、streamを片方のみを追いすぎず、順にcarするためである
 ; 片方のorで取得するストリームが無限になっていても、もう片方のストリームがいい感じに混ざるようになる
 ;
+; 例
+(assert! (married Minnie Mickey))
+(assert! (rule (married ?x ?y)
+               (married ?y ?x)))
+(married Mickey ?who)
+
