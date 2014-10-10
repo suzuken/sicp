@@ -52,3 +52,26 @@
   (goto (label test-b))
   gcd-done)
 
+; 印字と読み取りも取り入れたgcd
+(controller
+  gcd-loop
+    (assing a (op read))
+    (assign b (op read))
+  test-b
+    (test (ope =) (reg b) (const 0))
+    (branch (label gcd-done))
+    (assign t (op rem) (reg a) (reg b))
+    (assign a (reg b))
+    (assign b (reg t))
+    (goto (label test-b))
+  gcd-done
+    (perform (op print) (reg a))
+    (goto (label gcd-loop)))
+
+; s5.1.2
+
+(define (remainder n d)
+  (if (< n d)
+    n
+    (remainder (- n d) d)))
+
