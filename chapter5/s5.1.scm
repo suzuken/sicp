@@ -75,3 +75,62 @@
     n
     (remainder (- n d) d)))
 
+; s5.1.3
+
+; continueを利用することで、gcd演算が終了したことを識別する
+gcd
+ (test (op =) (reg b) (const 0))
+ (branch (label gcd-done))
+ (assign t (op rem) (reg a) (reg b))
+ (assign a (reg b))
+ (assign b (reg t))
+ (goto (label gcd))
+gcd-done
+ (test (op =) (reg continue) (const 0))
+ (branch (label after-gcd-1))
+ (goto (label after-gcd-2))
+ ...
+ (assign continue (const 0))
+ (goto (label gcd))
+after-gcd-1
+ ...
+ (assign continue (const 1))
+ (goto (label gcd))
+after-gcd-2
+
+; しかしこれだとわかりづらいので、continueレジスタにlabelを導入する
+gcd
+ (test (op =) (reg b) (const 0))
+ (branch (label gcd-done))
+ (assign t (op rem) (reg a) (reg b))
+ (assign a (reg b))
+ (assign b (reg t))
+ (goto (label gcd))
+gcd-done
+ (goto (reg continue))
+ ...
+ ...
+ (assign continue (label after-gcd-1))
+ (goto (label gcd))
+after-gcd-1
+ ...
+ (assign continue (label after-gcd-2))
+ (goto (label gcd))
+after-gcd-2
+
+; s5.1.4
+
+(define (factorial n)
+  (if (= n 1)
+    1
+    (* (factorial (- n 1)) n)))
+
+(define (gcd a b)
+  (if (= b 0)
+    a
+    (gcd b (remainder a b))))
+
+(controller
+    (assign continue (label fact-done))
+  fact-loop
+    (test (op =) (reg n) (const 1))
