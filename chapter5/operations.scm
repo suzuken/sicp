@@ -263,3 +263,22 @@
 
 (define (get-global-environment)
   the-global-environment)
+
+; q4.6より追加 (q5.23用
+(define (let? exp)
+  (tagged-list? exp 'let))
+(define (let-parameters exp)
+  (cadr exp))
+(define (let-body exp)
+  (cddr exp))
+(define (let-variables exp)
+  (map car (let-parameters exp)))
+(define (let-expressions exp)
+  (map cadr (let-parameters exp)))
+
+(define (let->combination exp)
+  (if (null? (let-parameters exp))
+    '()
+    (cons
+      (make-lambda (let-variables exp) (let-body exp))
+      (let-expressions exp))))
