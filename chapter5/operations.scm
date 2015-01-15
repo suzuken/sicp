@@ -282,3 +282,23 @@
     (cons
       (make-lambda (let-variables exp) (let-body exp))
       (let-expressions exp))))
+
+; 遅延評価のための手続き類, q5.25用
+; メモ化はしていない
+(define (actual-value exp env)
+  (force-it (eval exp env)))
+
+(define (force-it obj)
+  (if (thunk? obj)
+    (actual-value (thunk-exp obj) (thunk-env obj))
+    obj))
+
+(define (delay-it exp env)
+  (list 'thunk exp env))
+
+(define (thunk? obj)
+  (tagged-list? obj 'thunk))
+
+(define (thunk-exp thunk) (cadr thunk))
+
+(define (thunk-env thunk) (caddr thunk))
